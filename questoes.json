@@ -1,0 +1,620 @@
+{
+  "motivos_descarte_confirmador": [
+    "Cliente declarou recentemente que não tem interesse no produto",
+    "Já abordei nos últimos 90 dias e não rolou — sem mudança de cenário",
+    "Cliente em risco / momento contratual ruim (churn, downgrade, faturamento suspenso, plano de ação)",
+    "Outra prioridade comercial em andamento (renegociação, expansão de outro produto, projeto crítico)",
+    "Sei que o fit pré-calculado não reflete a realidade",
+    "Decisor identificado não é o interlocutor da reunião — preciso de outro contato antes",
+    "Produto fora do orçamento atual do cliente",
+    "Outro"
+  ],
+  "tronco": [
+    {
+      "id": "T1a",
+      "pergunta": "Hoje, como está estruturado o jurídico de vocês? (tamanho do time)",
+      "opcoes": [
+        "Não tem time formal — outras áreas absorvem",
+        "Time pequeno (1-3 pessoas)",
+        "Time médio (4-10 pessoas)",
+        "Time grande (10+ pessoas)",
+        "Misto — interno + escritórios externos",
+        "Outro"
+      ],
+      "tipo": "single"
+    },
+    {
+      "id": "T1b",
+      "pergunta": "E áreas cobertas (marcar todas que valem):",
+      "opcoes": [
+        "Contencioso",
+        "Consultivo / Contratos",
+        "Compliance / Regulatório",
+        "Trabalhista dedicado",
+        "Tributário dedicado",
+        "Outro"
+      ],
+      "tipo": "multi"
+    },
+    {
+      "id": "T2a",
+      "pergunta": "Como é o volume de processos / contratos / demandas que vocês lidam por mês?",
+      "opcoes": [
+        "Baixo (até 50/mês)",
+        "Médio (50 a 500/mês)",
+        "Alto (500 a 5.000/mês)",
+        "Muito alto (5.000+/mês)",
+        "Não medimos com precisão",
+        "Outro"
+      ],
+      "tipo": "single"
+    },
+    {
+      "id": "T2b",
+      "pergunta": "E esse volume — como vem se comportando?",
+      "opcoes": [
+        "Crescendo de forma consistente",
+        "Estável",
+        "Caindo / em redução",
+        "Sazonal / oscila bastante",
+        "Não acompanhamos",
+        "Outro"
+      ],
+      "tipo": "single"
+    },
+    {
+      "id": "T3a",
+      "pergunta": "Hoje vocês usam o Projuris mais pra operação ou também pra gestão estratégica?",
+      "opcoes": [
+        "Operação + gestão estratégica forte",
+        "Operação + alguma gestão",
+        "Praticamente só operação",
+        "Uso parcial — algumas áreas usam, outras não",
+        "Subutilizado — usa pouco do potencial",
+        "Outro"
+      ],
+      "tipo": "single"
+    },
+    {
+      "id": "T3b",
+      "pergunta": "E tem alguma área que ainda roda fora do sistema?",
+      "opcoes": [
+        "Não, tudo dentro do Projuris",
+        "Sim, controles em Excel/planilha",
+        "Sim, comunicação por e-mail / WhatsApp",
+        "Sim, controles em sistemas paralelos",
+        "Sim, processos manuais / em papel",
+        "Outro"
+      ],
+      "tipo": "multi"
+    },
+    {
+      "id": "T4",
+      "pergunta": "O que mais incomoda hoje na forma como vocês gerenciam o jurídico? (até 3)",
+      "opcoes": [
+        "Falta de controle / visibilidade",
+        "Retrabalho operacional / dependência de pessoas",
+        "Informação descentralizada",
+        "Dificuldade de acompanhar prazos / movimentações",
+        "Decisões tomadas sem dado",
+        "Custo alto / sem controle financeiro",
+        "Falta de evidência / rastreabilidade",
+        "Falta de previsibilidade",
+        "Não sente dor relevante hoje",
+        "Outro"
+      ],
+      "tipo": "multi"
+    },
+    {
+      "id": "T5",
+      "pergunta": "Vocês veem o jurídico mais como área operacional ou como área estratégica dentro da empresa?",
+      "opcoes": [
+        "Estratégica — participa de decisões da empresa",
+        "Caminhando pra estratégica — em transição",
+        "Operacional, mas com pressão pra evoluir",
+        "Operacional e sem demanda de evolução",
+        "Outro"
+      ],
+      "tipo": "single"
+    },
+    {
+      "id": "T6",
+      "pergunta": "Esse tema está hoje na lista de prioridades de vocês?",
+      "opcoes": [
+        "Top 3 prioridades atuais",
+        "Importante, mas não é top 3",
+        "Reconhece como dor, mas não tá olhando agora",
+        "Não é prioridade no momento"
+      ],
+      "tipo": "single"
+    },
+    {
+      "id": "T7",
+      "pergunta": "Quem mais precisaria estar envolvido numa decisão como essa?",
+      "opcoes": [
+        "Gerente / coordenador jurídico",
+        "Head / diretor jurídico",
+        "CFO / financeiro",
+        "CEO / diretoria executiva",
+        "TI / Tecnologia",
+        "Compras / Procurement",
+        "É o próprio interlocutor",
+        "Outro"
+      ],
+      "tipo": "multi"
+    }
+  ],
+  "produtos": {
+    "Acordos": {
+      "tipo": "juridico",
+      "pergunta_chave": {
+        "id": "AC_PC",
+        "pergunta": "Como funciona hoje a operação de acordos de vocês?",
+        "opcoes": [
+          {"texto": "Estruturada, com régua / política definida"},
+          {"texto": "Pontual, caso a caso, sem régua"},
+          {"texto": "Não fazemos acordo, mas seria interessante avaliar", "tipo": "interest"},
+          {"texto": "Não fazemos acordo e não é prioridade", "tipo": "discard"},
+          {"texto": "Outro"}
+        ]
+      },
+      "essenciais": [
+        {
+          "id": "AC_E1",
+          "pergunta": "Vocês têm alguém ou alguma área responsável pela política de acordos hoje?",
+          "opcoes": [
+            {"texto": "Sim, equipe interna do jurídico"},
+            {"texto": "Sim, escritório externo"},
+            {"texto": "Sim, call center / time de negociação"},
+            {"texto": "Não temos, mas seria interessante estruturar", "tipo": "interest"},
+            {"texto": "Não temos e não é prioridade no momento", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "AC_E2",
+          "pergunta": "De cada 10 casos passíveis de acordo, mais ou menos quantos viram acordo?",
+          "opcoes": [
+            {"texto": "Mais de 7 — taxa alta"},
+            {"texto": "Entre 4 e 7 — poderia melhorar"},
+            {"texto": "Menos de 3 — taxa baixa"},
+            {"texto": "Não medimos hoje, mas seria útil ter", "tipo": "interest"},
+            {"texto": "Não medimos e não é tema agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "AC_E3",
+          "pergunta": "Em comparação ao processo até o final, um acordo costuma sair…",
+          "opcoes": [
+            {"texto": "Significativamente mais barato"},
+            {"texto": "Parecido — não faz tanta diferença"},
+            {"texto": "Às vezes mais caro"},
+            {"texto": "Não temos esse comparativo, mas seria útil", "tipo": "interest"},
+            {"texto": "Não temos comparativo e não é tema agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        }
+      ],
+      "adicionais": [
+        {
+          "id": "AC_A1",
+          "pergunta": "Em que momento do processo vocês costumam tentar o acordo?",
+          "opcoes": ["Pré-processo / antes de ajuizar", "Logo no início do processo", "Em audiência / conciliação", "Durante a execução", "Só no final / fase de cumprimento", "Não temos padrão definido", "Outro"]
+        },
+        {
+          "id": "AC_A2",
+          "pergunta": "Quando um caso passível de acordo não fecha, o que mais pesa?",
+          "opcoes": ["Dificuldade de contato com a parte adversa", "Cliente / parte rejeita os termos", "Não conseguimos estimar valor justo", "Falta tempo / capacidade no time pra negociar", "Política interna restritiva", "Outro"]
+        },
+        {
+          "id": "AC_A3",
+          "pergunta": "Quem faz hoje a negociação dos acordos?",
+          "opcoes": ["Equipe interna do jurídico", "Escritório externo", "Call center / time terceirizado", "Misto interno + externo", "Não temos área formal cuidando disso", "Outro"]
+        }
+      ],
+      "sinais": [
+        "Cliente disse \"deixamos dinheiro na mesa\"",
+        "Operação saturada / call center não dá conta",
+        "Alto volume + baixa conversão",
+        "Sem régua / política, com interesse em estruturar",
+        "Custo desproporcional"
+      ],
+      "pitch": "Pelo que você comentou, vocês têm um volume relevante de casos passíveis de acordo, mas a operação ainda é manual e a taxa de conversão fica abaixo do que poderia render. Tem uma plataforma que estrutura essa parte com escala — entrega proposta automática, controla régua, mede performance. Faz sentido eu conectar você com o time pra aprofundar?"
+    },
+    "Oystr": {
+      "tipo": "juridico",
+      "pergunta_chave": {
+        "id": "OY_PC",
+        "pergunta": "Quando tem movimentação de processos, como vocês fazem hoje?",
+        "opcoes": [
+          {"texto": "Já está automatizado, fluxo roda sozinho"},
+          {"texto": "Tem 1 pessoa dedicada que olha tudo"},
+          {"texto": "Mais de 1 pessoa, dividido por área / tipo"},
+          {"texto": "Cada um do time olha o seu pedaço"},
+          {"texto": "Tá meio bagunçado — ninguém formal cuida disso"},
+          {"texto": "Outro"}
+        ]
+      },
+      "essenciais": [
+        {
+          "id": "OY_E1",
+          "pergunta": "E quando a pessoa que cuida disso tira férias ou sai? Como vocês fazem?",
+          "opcoes": [
+            {"texto": "Tem backup formal — outra pessoa assume"},
+            {"texto": "Alguém cobre, mas com dificuldade / atraso"},
+            {"texto": "Fica acumulado até a pessoa voltar"},
+            {"texto": "Já tivemos problema por isso, mas não é prioridade resolver", "tipo": "discard"},
+            {"texto": "Já tivemos problema e estamos buscando alternativa", "tipo": "interest"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "OY_E2",
+          "pergunta": "Que tipos de movimentação são mais comuns no dia a dia? Costuma ser parecido todo mês?",
+          "opcoes": [
+            {"texto": "Sim, muito padronizado — mesmas tarefas se repetem"},
+            {"texto": "Mais ou menos — tem padrão mas com exceções frequentes"},
+            {"texto": "Cada caso é diferente, pouca repetição"},
+            {"texto": "Não medimos isso, mas seria útil entender", "tipo": "interest"},
+            {"texto": "Não medimos e não é tema agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "OY_E3",
+          "pergunta": "Quanto tempo do time é gasto com essas atividades mais operacionais hoje?",
+          "opcoes": [
+            {"texto": "Mais da metade do tempo do time"},
+            {"texto": "Boa parte, mas dá conta"},
+            {"texto": "Pouco — operação leve"},
+            {"texto": "Não medimos, mas a sensação é que dá retrabalho", "tipo": "interest"},
+            {"texto": "Não medimos e não é tema agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        }
+      ],
+      "adicionais": [
+        {
+          "id": "OY_A1",
+          "pergunta": "Como é o tempo entre a movimentação chegar e alguém agir?",
+          "opcoes": ["Quase em tempo real (mesmo dia)", "Em até 24h", "De 1 a 3 dias", "Mais de 3 dias é comum", "Não medimos / depende muito do caso", "Outro"]
+        },
+        {
+          "id": "OY_A2",
+          "pergunta": "Cada pessoa tem seu jeito de tratar as movimentações ou existe um padrão claro?",
+          "opcoes": ["Padrão formalizado, todos seguem", "Padrão informal — meio que todo mundo faz parecido", "Cada um tem seu jeito", "Tá em construção um padrão agora", "Outro"]
+        },
+        {
+          "id": "OY_A3",
+          "pergunta": "Já houve incidente / perda / prazo perdido por depender de alguém olhar?",
+          "opcoes": ["Sim, já houve perda / multa / prazo perdido", "Sim, mas só atraso interno (sem dano externo)", "Quase aconteceu, conseguimos evitar", "Não, sem histórico de incidente", "Não medimos isso", "Outro"]
+        }
+      ],
+      "sinais": [
+        "Cliente disse \"sempre alguém precisa olhar e decidir\"",
+        "\"Tem muito retrabalho\" / \"demora pra agir\"",
+        "\"Cada um faz de um jeito\"",
+        "Já houve incidente, perda ou prazo perdido por dependência humana",
+        "Time pequeno saturado com operacional repetitivo"
+      ],
+      "pitch": "Pelo que você comentou, vocês ainda dependem bastante de análise manual pra agir em cima das movimentações — e isso gera retrabalho e risco de algo passar. Existe uma camada que transforma essas movimentações em ações automáticas, eliminando essa dependência humana. Acho que faz sentido conectar você com o time que aprofunda."
+    },
+    "Presto": {
+      "tipo": "juridico",
+      "pergunta_chave": {
+        "id": "PR_PC",
+        "pergunta": "Como funciona hoje a gestão de logins e credenciais de sistemas críticos de vocês?",
+        "opcoes": [
+          {"texto": "TI cuida com gestão de identidade formal (IAM)"},
+          {"texto": "Cada área cuida do seu jeito"},
+          {"texto": "Tudo centralizado em planilha / documento interno"},
+          {"texto": "Acessos compartilhados em alguns sistemas"},
+          {"texto": "Não temos processo formal definido"},
+          {"texto": "Outro"}
+        ]
+      },
+      "essenciais": [
+        {
+          "id": "PR_E1",
+          "pergunta": "Existem acessos compartilhados (mesmo login pra mais de uma pessoa) em sistemas críticos hoje?",
+          "opcoes": [
+            {"texto": "Sim, em vários sistemas"},
+            {"texto": "Sim, em alguns sistemas pontuais"},
+            {"texto": "Quase não — mas tem casos pontuais"},
+            {"texto": "Não, cada um tem seu acesso"},
+            {"texto": "Sim, mas seria interessante resolver isso", "tipo": "interest"},
+            {"texto": "Sim, mas não é prioridade no momento", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "PR_E2",
+          "pergunta": "Quando alguém sai da empresa, como é o processo de remover acessos?",
+          "opcoes": [
+            {"texto": "Processo automatizado — TI desativa em todos os sistemas"},
+            {"texto": "Manual mas confiável — RH avisa TI e checklist é seguido"},
+            {"texto": "Manual e nem sempre completo — às vezes acesso fica ativo"},
+            {"texto": "Já aconteceu de ex-funcionário manter acesso, mas estamos resolvendo", "tipo": "interest"},
+            {"texto": "Já aconteceu mas não é prioridade", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "PR_E3",
+          "pergunta": "Quando precisam rastrear quem acessou o quê e quando, como vocês descobrem hoje?",
+          "opcoes": [
+            {"texto": "Temos log centralizado e fácil de consultar"},
+            {"texto": "Tem log mas é trabalhoso de buscar"},
+            {"texto": "Cada sistema tem o seu, sem visão consolidada"},
+            {"texto": "Não conseguimos rastrear hoje, mas seria útil ter", "tipo": "interest"},
+            {"texto": "Não rastreamos e não é tema agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        }
+      ],
+      "adicionais": [
+        {
+          "id": "PR_A1",
+          "pergunta": "Vocês passam por auditoria ou têm exigência regulatória?",
+          "opcoes": ["Sim, LGPD com cobrança ativa", "Sim, ISO ou outra certificação", "Sim, compliance interno / regulamentação setorial", "Auditorias eventuais, sem cobrança recorrente", "Não passamos por auditoria formal", "Outro"]
+        },
+        {
+          "id": "PR_A2",
+          "pergunta": "Já houve preocupação ou incidente de acesso?",
+          "opcoes": ["Sim, incidente confirmado", "Quase incidente / suspeita identificada a tempo", "Preocupação, sem incidente concreto", "Não houve, mas é tema do time de segurança", "Não houve e não é tema acompanhado", "Outro"]
+        },
+        {
+          "id": "PR_A3",
+          "pergunta": "Quais sistemas são mais críticos em termos de acesso? (marcar todos que valem)",
+          "opcoes": ["Projuris / sistemas jurídicos", "ERP / sistemas financeiros", "Bancos / pagamentos", "CRM / sistemas comerciais", "RH / folha", "Sistemas de cliente / produção", "Outro"]
+        }
+      ],
+      "sinais": [
+        "Login compartilhado em sistema crítico",
+        "Ex-funcionário com acesso ativo já aconteceu",
+        "Sem rastreabilidade clara",
+        "Auditoria/compliance ativo com gap conhecido",
+        "Já houve incidente de acesso indevido"
+      ],
+      "pitch": "Pelo que você comentou, hoje vocês compartilham acessos e não têm rastreabilidade clara — e isso é um risco operacional e regulatório real. Tem uma plataforma que centraliza credenciais, garante rastreabilidade e fecha esses gaps com auditoria. Acho que faz sentido o time olhar com vocês."
+    },
+    "Legal Intelligence": {
+      "tipo": "juridico",
+      "pergunta_chave": {
+        "id": "LI_PC",
+        "pergunta": "Hoje vocês usam o Projuris mais pra operação ou também pra gestão e tomada de decisão?",
+        "opcoes": [
+          {"texto": "Operação + gestão estratégica forte"},
+          {"texto": "Operação + alguma gestão, mas com gap"},
+          {"texto": "Praticamente só operação"},
+          {"texto": "Só operação, mas seria interessante usar pra gestão", "tipo": "interest"},
+          {"texto": "Só operação e não é prioridade evoluir agora", "tipo": "discard"},
+          {"texto": "Outro"}
+        ]
+      },
+      "essenciais": [
+        {
+          "id": "LI_E1",
+          "pergunta": "Vocês acompanham indicadores do jurídico hoje?",
+          "opcoes": [
+            {"texto": "Sim, vários indicadores formais"},
+            {"texto": "Alguns, mas não tudo o que gostaríamos"},
+            {"texto": "Pouquíssimos — quase nada estruturado"},
+            {"texto": "Não acompanhamos hoje, mas seria útil ter", "tipo": "interest"},
+            {"texto": "Não acompanhamos e não é tema agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "LI_E2",
+          "pergunta": "Como está a padronização dos dados de vocês? Vocês confiam neles?",
+          "opcoes": [
+            {"texto": "Padronizado e confiável"},
+            {"texto": "Padronizado em parte"},
+            {"texto": "Pouco padronizado, dados não tão confiáveis"},
+            {"texto": "Bagunçado, mas estamos buscando organizar", "tipo": "interest"},
+            {"texto": "Bagunçado e não é prioridade resolver agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "LI_E3",
+          "pergunta": "Como é a demanda da diretoria por relatórios do jurídico?",
+          "opcoes": [
+            {"texto": "Frequente e estruturada — relatórios recorrentes"},
+            {"texto": "Existe, mas pontual / por demanda específica"},
+            {"texto": "Pouca demanda direta da diretoria"},
+            {"texto": "Pouca, mas seria útil estruturar relatório regular", "tipo": "interest"},
+            {"texto": "Pouca e não é tema agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        }
+      ],
+      "adicionais": [
+        {
+          "id": "LI_A1",
+          "pergunta": "Quais decisões são mais difíceis de tomar hoje por falta de informação? (até 3)",
+          "opcoes": ["Provisão financeira / contingência", "Definir estratégia em casos específicos", "Avaliar performance de escritórios externos", "Justificar custos / orçamento pra diretoria", "Decidir entre acordo vs litígio", "Priorizar casos / alocar time", "Outro"]
+        },
+        {
+          "id": "LI_A2",
+          "pergunta": "Como vocês acompanham hoje a performance dos escritórios externos e provisão vs realizado?",
+          "opcoes": ["Dashboard / relatório recorrente automatizado", "Planilha mantida manualmente", "Reuniões pontuais sem dado estruturado", "Não acompanhamos hoje", "Não temos escritórios externos", "Outro"]
+        },
+        {
+          "id": "LI_A3",
+          "pergunta": "Se tivessem dashboards prontos, vocês prefeririam…",
+          "opcoes": ["Algo pronto, padronizado, fácil de usar", "Algo customizado pra realidade de vocês", "Misto — base padrão + ajustes", "Não sabemos / nunca pensamos", "Outro"]
+        }
+      ],
+      "sinais": [
+        "\"Já tentamos extrair dados e não conseguimos\"",
+        "\"A diretoria pede relatório\"",
+        "\"Fazemos tudo manual no Excel\"",
+        "\"Não sabemos onde estamos perdendo\"",
+        "Pressão por previsibilidade ou redução de custos"
+      ],
+      "pitch": "Pelo que você comentou, vocês já têm bastante dado no Projuris, mas ainda não conseguem transformar isso em informação pra tomada de decisão. Existe uma camada de inteligência que organiza esses indicadores e facilita essa análise, sem precisar estruturar tudo do zero. Acho que faz sentido aprofundar com o time."
+    },
+    "Deep Legal": {
+      "tipo": "juridico",
+      "pergunta_chave": {
+        "id": "DP_PC",
+        "pergunta": "Como vocês fazem hoje pra prever tendências do jurídico — aumento de ações, chances de perda, impacto financeiro futuro?",
+        "opcoes": [
+          {"texto": "Já fazemos com ferramenta de jurimetria / dados externos"},
+          {"texto": "Fazemos manualmente, com dados internos + análise"},
+          {"texto": "É mais no feeling — sem dado estruturado"},
+          {"texto": "Não fazemos hoje, mas seria interessante avaliar", "tipo": "interest"},
+          {"texto": "Não fazemos e não é prioridade", "tipo": "discard"},
+          {"texto": "Outro"}
+        ]
+      },
+      "essenciais": [
+        {
+          "id": "DP_E1",
+          "pergunta": "Como são tomadas hoje as decisões estratégicas (provisão, contingência, estratégia jurídica)?",
+          "opcoes": [
+            {"texto": "Com segurança — temos números que sustentam"},
+            {"texto": "Mistura: alguns dados, mas muito feeling também"},
+            {"texto": "Mais no feeling — sem dado pra sustentar"},
+            {"texto": "No feeling, mas queremos evoluir pra dado", "tipo": "interest"},
+            {"texto": "No feeling e não é prioridade evoluir agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "DP_E2",
+          "pergunta": "Como é hoje a pressão da diretoria por números e previsibilidade jurídica?",
+          "opcoes": [
+            {"texto": "Forte — diretoria cobra números frequentemente"},
+            {"texto": "Existe, pontual"},
+            {"texto": "Pouca pressão direta"},
+            {"texto": "Pouca hoje, mas tendência é aumentar — vale antecipar", "tipo": "interest"},
+            {"texto": "Pouca e não é tema no momento", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        },
+        {
+          "id": "DP_E3",
+          "pergunta": "Vocês cruzam dados internos com cenário externo (mercado, concorrência, jurisprudência)?",
+          "opcoes": [
+            {"texto": "Sim, com ferramenta dedicada"},
+            {"texto": "Sim, mas manualmente"},
+            {"texto": "Não cruzamos hoje"},
+            {"texto": "Não cruzamos, mas seria útil avaliar", "tipo": "interest"},
+            {"texto": "Não cruzamos e não é tema agora", "tipo": "discard"},
+            {"texto": "Outro"}
+          ]
+        }
+      ],
+      "adicionais": [
+        {
+          "id": "DP_A1",
+          "pergunta": "Quais indicadores vocês acompanham hoje? (marcar todos que valem)",
+          "opcoes": ["Volume de processos", "Taxa de perda / ganho", "Provisionamento / contingência", "SLA / tempo médio", "Custo por processo", "Performance de escritórios", "Não acompanhamos indicadores estruturados", "Outro"]
+        },
+        {
+          "id": "DP_A2",
+          "pergunta": "Quando precisam de relatório completo, quanto tempo leva pra montar?",
+          "opcoes": ["Minutos / horas — automatizado", "Até 1 dia", "Vários dias", "Mais de uma semana", "Não conseguimos montar — depende de gente externa", "Outro"]
+        },
+        {
+          "id": "DP_A3",
+          "pergunta": "Já tentaram montar BI ou inteligência preditiva interna?",
+          "opcoes": ["Sim, e tá funcionando", "Sim, mas resultado abaixo do esperado", "Tentamos e desistimos no meio", "Nunca tentamos, mas é tema atual", "Nunca tentamos e não é tema atual", "Outro"]
+        }
+      ],
+      "sinais": [
+        "\"Decisão fica no feeling, não temos como provar\"",
+        "\"Diretoria pede previsão e a gente não tem\"",
+        "\"Demora dias pra montar relatório completo\"",
+        "Pressão por reduzir contingência ou ajustar provisão",
+        "Já tentaram BI próprio e não rolou"
+      ],
+      "pitch": "Pelo que você comentou, hoje as decisões estratégicas são tomadas mais no feeling, e a diretoria já cobra previsibilidade. Tem uma camada que cruza os dados internos com cenário externo e entrega previsibilidade real — não é dashboard, é segurança na tomada de decisão. Acho que faz sentido aprofundar com o time."
+    },
+    "Sienge": {
+      "tipo": "ponte",
+      "p1": {
+        "id": "SI_P1",
+        "pergunta": "Como funciona hoje a operação de obras ou empreendimentos de vocês? Tem algum sistema que diga quanto vocês ganham em cada obra?",
+        "instrucao": "CS apenas escuta. Anotações qualitativas vão pro bloco final."
+      },
+      "p2": {
+        "id": "SI_P2",
+        "fala": "A gente tem uma ferramenta especializada em gestão de construção que centraliza obra, financeiro e contratos. Não sei se isso é tema aí na empresa de vocês — você sabe se passa por alguém?",
+        "opcoes": [
+          {"texto": "Sim, é tema, e quem cuida é:", "tipo": "free"},
+          {"texto": "É tema, mas não sei quem cuida hoje"},
+          {"texto": "Não é tema na empresa", "tipo": "discard"},
+          {"texto": "Empresa não atua em construção / não se aplica", "tipo": "discard"},
+          {"texto": "Outro"}
+        ]
+      },
+      "p3": {
+        "id": "SI_P3",
+        "pergunta": "Você poderia indicar essa pessoa pro nosso time comercial entrar em contato?",
+        "condicional": "p2_sim",
+        "opcoes": [
+          {"texto": "Sim, posso passar o contato direto"},
+          {"texto": "Sim, mas prefiro fazer a apresentação interna eu mesmo"},
+          {"texto": "Preciso checar com a pessoa antes"},
+          {"texto": "Não, não faz sentido agora"},
+          {"texto": "Outro"}
+        ]
+      },
+      "pitch": "Pelo que você comentou, faz sentido vocês conhecerem essa ferramenta. Como esse tema sai do jurídico, vou conectar com nosso time comercial — eles falam direto com a pessoa que cuida disso aí dentro. Você confirma o contato pra mim?"
+    },
+    "Checklist": {
+      "tipo": "ponte",
+      "p1": {
+        "id": "CK_P1",
+        "pergunta": "Eu sei que vocês têm bastante operação física — como é no dia a dia padronizar os processos operacionais? Tem algum sistema que faz isso em cada ponto de execução?",
+        "instrucao": "CS apenas escuta. Anotações qualitativas vão pro bloco final."
+      },
+      "p2": {
+        "id": "CK_P2",
+        "fala": "A gente tem uma ferramenta que padroniza a execução em cada unidade, coleta evidência (foto, registro, geo) e dá visibilidade em tempo real. Não sei se isso é tema aí — você sabe se passa por alguém?",
+        "opcoes": [
+          {"texto": "Sim, é tema, e quem cuida é:", "tipo": "free"},
+          {"texto": "É tema, mas não sei quem cuida hoje"},
+          {"texto": "Não é tema na empresa", "tipo": "discard"},
+          {"texto": "Operação não tem essa necessidade / não se aplica", "tipo": "discard"},
+          {"texto": "Outro"}
+        ]
+      },
+      "p3": {
+        "id": "CK_P3",
+        "pergunta": "Você poderia indicar essa pessoa pro nosso time comercial entrar em contato?",
+        "condicional": "p2_sim",
+        "opcoes": [
+          {"texto": "Sim, posso passar o contato direto"},
+          {"texto": "Sim, mas prefiro fazer a apresentação interna eu mesmo"},
+          {"texto": "Preciso checar com a pessoa antes"},
+          {"texto": "Não, não faz sentido agora"},
+          {"texto": "Outro"}
+        ]
+      },
+      "pitch": "Pelo que você comentou, faz sentido vocês darem uma olhada nessa ferramenta. Como esse tema sai do jurídico, vou conectar com nosso time comercial — eles falam direto com a pessoa que cuida disso aí. Você confirma o contato pra mim?"
+    }
+  },
+  "final": [
+    {"id": "F1", "pergunta": "Frase-gancho que o cliente verbalizou (a dor exata, palavra dele)", "tipo": "free_text"},
+    {
+      "id": "F2",
+      "pergunta": "Sensação geral do atendimento (clima, abertura, momento do cliente):",
+      "opcoes": ["Reunião muito produtiva — cliente engajado", "Boa, fluiu bem", "Mediana — cliente pouco aberto", "Difícil — cliente fechado / sem tempo", "Outro"]
+    },
+    {"id": "F3", "pergunta": "Algum contexto qualitativo adicional sobre a empresa ou pessoa que ajude o comercial?", "tipo": "free_text"},
+    {
+      "id": "F4",
+      "pergunta": "O questionário ajudou na qualificação durante a reunião?",
+      "opcoes": ["Muito — facilitou e deu estrutura", "Razoavelmente — ajudou em parte", "Pouco — algumas perguntas se aplicavam, outras não", "Não ajudou / atrapalhou o fluxo natural", "Outro"]
+    },
+    {"id": "F5", "pergunta": "Senti falta de pergunta sobre…", "tipo": "free_text"},
+    {"id": "F6", "pergunta": "Pergunta(s) que não fizeram sentido ou que vou pular nas próximas:", "tipo": "free_text"},
+    {"id": "F7", "pergunta": "Sugestão de melhoria (fluxo, alternativas, ordem):", "tipo": "free_text"}
+  ]
+}

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cross-sell Empresas — Listagem</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>Cross-sell — Base Empresas</h1>
+      <div class="meta">Modelo v6 · piloto interno</div>
+    </div>
+    <div class="meta">
+      <span id="cs-nome-display"></span>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="filtros">
+      <label for="cs-input">CS:</label>
+      <input type="text" id="cs-input" placeholder="seu nome (vai junto do envio)">
+
+      <label for="carteira-select">Carteira:</label>
+      <select id="carteira-select">
+        <option value="">Todas</option>
+      </select>
+
+      <label for="busca">Buscar:</label>
+      <input type="text" id="busca" placeholder="nome ou CNPJ">
+
+      <label for="fit-filter">Mostrar apenas com fit:</label>
+      <select id="fit-filter">
+        <option value="">Qualquer</option>
+        <option value="Alta">Alta</option>
+        <option value="Média">Alta ou Média</option>
+      </select>
+
+      <span class="contador" id="contador">— clientes</span>
+    </div>
+
+    <div class="tabela-wrapper">
+      <table id="tabela">
+        <thead>
+          <tr>
+            <th>CNPJ</th>
+            <th>Cliente</th>
+            <th>Cart.</th>
+            <th>Porte</th>
+            <th>HS</th>
+            <th>Acordos</th>
+            <th>Sienge</th>
+            <th>Checklist</th>
+            <th>Oystr</th>
+            <th>Presto</th>
+            <th>Legal Intel.</th>
+            <th>Deep Legal</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabela-body">
+          <tr><td colspan="13" class="empty-state">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

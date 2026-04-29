@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cross-sell Empresas — Análise de Cliente</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1><a href="index.html">← Cross-sell — Base Empresas</a></h1>
+      <div class="meta">Análise de cliente</div>
+    </div>
+    <div class="meta">
+      <span id="cs-nome-display"></span>
+    </div>
+  </header>
+
+  <div class="form-page">
+    <div id="cliente-info" class="cliente-info">
+      <div class="empty-state">Carregando cliente…</div>
+    </div>
+
+    <!-- BLOCO 0 — CONFIRMADOR -->
+    <div id="bloco-confirmador" class="bloco">
+      <h2>Bloco 0 — Confirmador (pré-reunião)</h2>
+      <div class="aviso-confirmador">
+        <strong>ATENÇÃO — etapa obrigatória ANTES da reunião com o cliente</strong>
+        Marque quais produtos do fit pré-calculado você vai entrevistar e justifique os que vai descartar. Pelo menos 1 produto precisa estar marcado como "Vou entrevistar" pra liberar a reunião.
+      </div>
+      <table class="confirmador-tabela">
+        <thead>
+          <tr>
+            <th style="width: 18%">Produto</th>
+            <th style="width: 8%">Fit</th>
+            <th style="width: 24%">Decisão CS</th>
+            <th style="width: 50%" class="motivo-header">Motivo (se descartar)</th>
+          </tr>
+        </thead>
+        <tbody id="confirmador-body"></tbody>
+      </table>
+      <div class="btn-bar">
+        <button id="btn-iniciar" class="btn btn-primary" disabled>Iniciar reunião →</button>
+      </div>
+    </div>
+
+    <!-- BLOCO TRONCO -->
+    <div id="bloco-tronco" class="bloco hidden">
+      <h2>Bloco comum — Tronco</h2>
+      <p style="color:#57606a; margin-bottom:12px;">Roda em todo atendimento, antes de qualquer ramificação.</p>
+      <div id="tronco-perguntas"></div>
+    </div>
+
+    <!-- BLOCOS POR PRODUTO -->
+    <div id="blocos-produtos"></div>
+
+    <!-- BLOCO FINAL — ESPAÇO ABERTO -->
+    <div id="bloco-final" class="bloco hidden">
+      <h2>Espaço aberto — comentários do CS</h2>
+      <p style="color:#57606a; margin-bottom:12px;">Único lugar do formulário com campo livre. Preencha após a reunião o que fizer sentido.</p>
+      <div id="final-perguntas"></div>
+      <div class="btn-bar">
+        <button id="btn-enviar" class="btn btn-primary">Finalizar e enviar</button>
+      </div>
+    </div>
+
+    <div id="resultado" class="bloco hidden">
+      <h2>✓ Enviado!</h2>
+      <p id="resultado-msg"></p>
+      <div class="btn-bar">
+        <a href="index.html" class="btn btn-primary" style="text-decoration:none;">Voltar à listagem</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="formulario.js"></script>
+</body>
+</html>

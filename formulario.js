@@ -1,8 +1,8 @@
 // === Cross-sell Empresas — Formulário Adaptativo ===
- 
+
 // COLE AQUI A URL DO APPS SCRIPT QUANDO PUBLICAR (instruções no README.md)
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd98iOapWRyGcXmig7eLcG0kxP5SQtPSM1GVrvSbbcwDmXJM0TIdtdutVE34nLbuoEVQ/exec"; // ex: "https://script.google.com/macros/s/AKfyc.../exec"
- 
+
 let cliente = null;
 let questoes = null;
 let respostas = {
@@ -12,9 +12,9 @@ let respostas = {
   produtos: {},
   final: {}
 };
- 
+
 const PRODUTOS = ["Acordos", "Sienge", "Checklist", "Oystr", "Presto", "Legal Intelligence", "Deep Legal"];
- 
+
 // === Identificação do CS (mesma lógica do app.js) ===
 function normalizarNome(s) {
   if (!s) return "";
@@ -56,7 +56,7 @@ function confirmarCS() {
   respostas.meta.cs = getCSNome();
   fecharModalCS();
 }
- 
+
 function getParam(name) {
   const u = new URL(window.location.href);
   return u.searchParams.get(name);
@@ -74,15 +74,40 @@ function formatDataHora() {
   const p = n => String(n).padStart(2, "0");
   return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
- 
+
+// === Histórico de entrevistas (lê cache do localStorage que app.js já populou) ===
+let entrevistasMap = {};
+function carregarEntrevistasCache() {
+  const cached = localStorage.getItem("entrevistas_cache");
+  if (!cached) return;
+  try {
+    const lista = JSON.parse(cached);
+    lista.forEach(ent => {
+      const key = `${ent.cnpj}__${ent.produto}`;
+      if (!entrevistasMap[key] || ent.data > entrevistasMap[key].data) {
+        entrevistasMap[key] = {data: ent.data, cs: ent.cs};
+      }
+    });
+  } catch (e) {}
+}
+function entrevistadoEm(cnpj, produto) {
+  return entrevistasMap[`${cnpj}__${produto}`] || null;
+}
+function formatDataCurta(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getFullYear()).slice(2)}`;
+}
+
 // === Carregamento ===
 async function init() {
   const cnpj = getParam("cnpj");
   if (!cnpj) { alert("CNPJ não fornecido."); window.location.href = "index.html"; return; }
- 
+
   atualizarHeaderCS();
   if (!getCSNome()) abrirModalCS();
- 
+
   const [dadosResp, questoesResp] = await Promise.all([
     fetch("clientes.json").then(r => r.json()),
     fetch("questoes.json").then(r => r.json())
@@ -90,16 +115,18 @@ async function init() {
   questoes = questoesResp;
   cliente = dadosResp.clientes.find(c => c.cnpj === cnpj);
   if (!cliente) { alert("Cliente não encontrado."); window.location.href = "index.html"; return; }
- 
+
   respostas.meta.cs = getCSNome();
   respostas.meta.cnpj = cnpj;
   respostas.meta.cliente_nome = cliente.nome;
   respostas.meta.iniciado_em = new Date().toISOString();
- 
+
+  carregarEntrevistasCache();
+
   renderClienteInfo();
   renderConfirmador();
 }
- 
+
 function renderClienteInfo() {
   const div = document.getElementById("cliente-info");
   const fits = Object.entries(cliente.fits)
@@ -125,7 +152,7 @@ function renderClienteInfo() {
     <div class="badges">${fits}</div>
   `;
 }
- 
+
 // === BLOCO 0 — CONFIRMADOR ===
 function produtosComFit() {
   return PRODUTOS.filter(p => {
@@ -148,7 +175,7 @@ function justificativaModelo(produto) {
   if ((produto === "Acordos" || produto === "Checklist") && div) partes.push(`Setor ${div}`.slice(0, 30));
   return partes.join(" · ");
 }
- 
+
 function renderConfirmador() {
   const tbody = document.getElementById("confirmador-body");
   const fits = produtosComFit();
@@ -161,27 +188,31 @@ function renderConfirmador() {
     const tr = document.createElement("tr");
     tr.dataset.produto = p;
     const fit = cliente.fits[p];
+    const ent = entrevistadoEm(cliente.cnpj, p);
+    const aviso = ent ? `<div class="ja-entrevistado">⚠ Já entrevistado em ${formatDataCurta(ent.data)} por ${escape(ent.cs || "?")}</div>` : "";
+    if (ent) tr.classList.add("ja-entrevistado-row");
     tr.innerHTML = `
-      <td><strong>${p}</strong><div style="font-size:11px; color:#777;">${justificativaModelo(p)}</div></td>
+      <td><strong>${p}</strong><div style="font-size:11px; color:#777;">${justificativaModelo(p)}</div>${aviso}</td>
       <td><span class="fit-cell fit-${fit}">${fit}</span></td>
       <td>
         <select class="decisao" data-produto="${p}">
           <option value="">— escolher —</option>
           <option value="entrevistar">Vou entrevistar</option>
-          <option value="descartar">Não vou entrevistar</option>
+          <option value="descartar"${ent ? " selected" : ""}>Não vou entrevistar</option>
         </select>
       </td>
       <td class="motivo-cell">
         <select class="motivo" data-produto="${p}">
           <option value="">— motivo —</option>
-          ${questoes.motivos_descarte_confirmador.map(m => `<option value="${escape(m)}">${escape(m)}</option>`).join("")}
+          ${questoes.motivos_descarte_confirmador.map(m => `<option value="${escape(m)}"${ent && m.startsWith("Já abordei") ? " selected" : ""}>${escape(m)}</option>`).join("")}
         </select>
         <input type="text" class="motivo-livre" data-produto="${p}" placeholder="(detalhe se Outro)" style="margin-top:4px; display:none;">
       </td>
     `;
+    if (ent) tr.classList.add("descartar");
     tbody.appendChild(tr);
   });
- 
+
   tbody.querySelectorAll("select.decisao").forEach(sel => {
     sel.addEventListener("change", () => {
       const tr = sel.closest("tr");
@@ -199,10 +230,12 @@ function renderConfirmador() {
   tbody.querySelectorAll(".motivo-livre").forEach(inp => {
     inp.addEventListener("input", atualizarBotaoIniciar);
   });
- 
+
   document.getElementById("btn-iniciar").addEventListener("click", iniciarReuniao);
+  // Avalia o estado inicial (caso linhas tenham vindo pré-selecionadas como "descartar" por já entrevistado)
+  atualizarBotaoIniciar();
 }
- 
+
 function atualizarBotaoIniciar() {
   const btn = document.getElementById("btn-iniciar");
   const linhas = document.querySelectorAll("#confirmador-body tr[data-produto]");
@@ -226,7 +259,7 @@ function atualizarBotaoIniciar() {
                     !temEntrevistar ? "Marque pelo menos 1 \"Vou entrevistar\" →" :
                     "Iniciar reunião →";
 }
- 
+
 function iniciarReuniao() {
   const linhas = document.querySelectorAll("#confirmador-body tr[data-produto]");
   const produtosEntrevistar = [];
@@ -242,7 +275,7 @@ function iniciarReuniao() {
     if (decisao === "entrevistar") produtosEntrevistar.push(p);
   });
   respostas.meta.produtos_entrevistar = produtosEntrevistar;
- 
+
   document.getElementById("bloco-confirmador").classList.add("hidden");
   renderTronco();
   renderProdutos(produtosEntrevistar);
@@ -251,7 +284,7 @@ function iniciarReuniao() {
   document.getElementById("bloco-final").classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
- 
+
 // === Renderização genérica de pergunta ===
 function renderPergunta(p, container, prefixId) {
   const id = `${prefixId}_${p.id}`;
@@ -259,11 +292,11 @@ function renderPergunta(p, container, prefixId) {
   const wrap = document.createElement("div");
   wrap.className = "pergunta";
   wrap.dataset.id = p.id;
- 
+
   const titulo = document.createElement("div");
   titulo.className = "pergunta-texto";
   titulo.innerHTML = `<span class="id">${p.id}</span> ${escape(p.pergunta || p.fala || "")}`;
- 
+
   if (p.fala) {
     const fala = document.createElement("div");
     fala.className = "fala-cs";
@@ -272,14 +305,14 @@ function renderPergunta(p, container, prefixId) {
   } else {
     wrap.appendChild(titulo);
   }
- 
+
   if (p.instrucao) {
     const inst = document.createElement("div");
     inst.style.cssText = "color:#777; font-size:12px; font-style:italic; margin-bottom:6px;";
     inst.textContent = p.instrucao;
     wrap.appendChild(inst);
   }
- 
+
   if (tipo === "free_text") {
     const ta = document.createElement("textarea");
     ta.dataset.id = p.id;
@@ -287,10 +320,10 @@ function renderPergunta(p, container, prefixId) {
     container.appendChild(wrap);
     return;
   }
- 
+
   const opcoes = p.opcoes || [];
   const inputType = tipo === "multi" ? "checkbox" : "radio";
- 
+
   opcoes.forEach((op, i) => {
     const opcaoTexto = typeof op === "string" ? op : op.texto;
     const opcaoTipo = typeof op === "object" ? op.tipo : null;
@@ -299,7 +332,7 @@ function renderPergunta(p, container, prefixId) {
     lbl.className = "opcao";
     if (opcaoTipo === "interest") lbl.classList.add("interest");
     if (opcaoTipo === "discard") lbl.classList.add("discard");
- 
+
     const input = document.createElement("input");
     input.type = inputType;
     input.name = id;
@@ -308,7 +341,7 @@ function renderPergunta(p, container, prefixId) {
     input.id = opcaoId;
     lbl.appendChild(input);
     lbl.appendChild(document.createTextNode(opcaoTexto));
- 
+
     if (opcaoTipo === "interest") {
       const tag = document.createElement("span"); tag.className = "tag-interest"; tag.textContent = "interesse";
       lbl.appendChild(tag);
@@ -316,7 +349,7 @@ function renderPergunta(p, container, prefixId) {
       const tag = document.createElement("span"); tag.className = "tag-discard"; tag.textContent = "não é prioridade";
       lbl.appendChild(tag);
     }
- 
+
     if (opcaoTexto.startsWith("Outro") || opcaoTipo === "free") {
       const livre = document.createElement("input");
       livre.type = "text";
@@ -328,7 +361,7 @@ function renderPergunta(p, container, prefixId) {
     }
     wrap.appendChild(lbl);
   });
- 
+
   // Campo de texto extra opcional (embaixo das opções, pra "consideração adicional")
   if (p.extra_texto) {
     const ta = document.createElement("textarea");
@@ -338,16 +371,16 @@ function renderPergunta(p, container, prefixId) {
     ta.style.cssText = "margin-top: 10px; min-height: 60px;";
     wrap.appendChild(ta);
   }
- 
+
   container.appendChild(wrap);
 }
- 
+
 function renderTronco() {
   const c = document.getElementById("tronco-perguntas");
   c.innerHTML = "";
   questoes.tronco.forEach(p => renderPergunta(p, c, "TR"));
 }
- 
+
 function renderProdutos(lista) {
   const c = document.getElementById("blocos-produtos");
   c.innerHTML = "";
@@ -357,7 +390,7 @@ function renderProdutos(lista) {
     const div = document.createElement("div");
     div.className = "bloco";
     div.dataset.produto = produto;
- 
+
     if (cfg.tipo === "ponte") {
       div.classList.add("ponte");
       div.innerHTML = `<h2>${produto}</h2>
@@ -409,15 +442,15 @@ function renderProdutos(lista) {
       pitch.innerHTML = `<strong>PITCH (CS → comercial):</strong>${escape(cfg.pitch)}`;
       div.appendChild(pitch);
     }
- 
+
     c.appendChild(div);
   });
- 
+
   c.addEventListener("change", e => {
     if (e.target.matches("input[type='radio'], input[type='checkbox']")) atualizarDescartes();
   });
 }
- 
+
 function atualizarDescartes() {
   document.querySelectorAll("#blocos-produtos .bloco").forEach(bloco => {
     const produto = bloco.dataset.produto;
@@ -432,13 +465,13 @@ function atualizarDescartes() {
     if (alerta) alerta.classList.toggle("visible", count >= 2);
   });
 }
- 
+
 function renderFinal() {
   const c = document.getElementById("final-perguntas");
   c.innerHTML = "";
   questoes.final.forEach(p => renderPergunta(p, c, "FINAL"));
 }
- 
+
 // === Coleta + envio ===
 function coletarRespostas() {
   respostas.tronco = {};
@@ -478,7 +511,7 @@ function coletarRespostas() {
   });
   respostas.meta.finalizado_em = new Date().toISOString();
 }
- 
+
 function coletarPergunta(p, prefix) {
   if (p.tipo === "free_text") {
     const ta = document.querySelector(`textarea[data-id="${p.id}"]`);
@@ -495,7 +528,7 @@ function coletarPergunta(p, prefix) {
   });
   return inputs[0].type === "radio" ? valores[0] : valores;
 }
- 
+
 // === Tela de resumo ===
 function gerarTextoResumo() {
   const linhas = [];
@@ -568,7 +601,7 @@ function gerarTextoResumo() {
   const f = respostas.final || {};
   const decisor = f.F0;
   const frase = f.F1;
- 
+
   if (decisor) {
     linhas.push(`DECISOR(ES) PRA PRÓXIMA CONVERSA`);
     const valor = Array.isArray(decisor) ? decisor.join("; ") : decisor;
@@ -580,7 +613,7 @@ function gerarTextoResumo() {
     linhas.push(`  "${frase}"`);
     linhas.push(``);
   }
- 
+
   // F2 — sensação + considerações sobre o cliente (sai no resumo pro comercial)
   const f2 = f.F2;
   const f2_extra = f.F2_extra;
@@ -595,10 +628,10 @@ function gerarTextoResumo() {
     }
     linhas.push(``);
   }
- 
+
   return linhas.join("\n");
 }
- 
+
 function abrirResumo() {
   coletarRespostas();
   document.getElementById("resumo-texto").textContent = gerarTextoResumo();
@@ -608,7 +641,7 @@ function abrirResumo() {
   document.getElementById("bloco-resumo").classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
- 
+
 function voltarParaForm() {
   document.getElementById("bloco-resumo").classList.add("hidden");
   document.getElementById("bloco-tronco").classList.remove("hidden");
@@ -616,7 +649,7 @@ function voltarParaForm() {
   document.getElementById("bloco-final").classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
- 
+
 async function copiarResumo() {
   const texto = document.getElementById("resumo-texto").textContent;
   try {
@@ -628,12 +661,12 @@ async function copiarResumo() {
     alert("Não consegui copiar automaticamente. Selecione o texto manualmente e copie (Ctrl+C).");
   }
 }
- 
+
 async function enviar() {
   const btn = document.getElementById("btn-confirmar-envio");
   btn.disabled = true;
   btn.textContent = "Enviando…";
- 
+
   if (!APPS_SCRIPT_URL) {
     document.getElementById("bloco-resumo").classList.add("hidden");
     const r = document.getElementById("resultado");
@@ -645,7 +678,7 @@ async function enviar() {
     console.log("Respostas:", respostas);
     return;
   }
- 
+
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: "POST",
@@ -662,7 +695,7 @@ async function enviar() {
     alert("Erro ao enviar: " + e.message);
   }
 }
- 
+
 document.addEventListener("DOMContentLoaded", () => {
   init();
   document.getElementById("modal-cs-confirma").addEventListener("click", confirmarCS);

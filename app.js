@@ -1,8 +1,62 @@
 // === Cross-sell Empresas — Listagem ===
 
+// Cole aqui a MESMA URL do Apps Script que está no formulario.js (sem essa URL,
+// a sinalização "já entrevistado" não funciona — o resto da página funciona normalmente).
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd98iOapWRyGcXmig7eLcG0kxP5SQtPSM1GVrvSbbcwDmXJM0TIdtdutVE34nLbuoEVQ/exec";
+
 const PRODUTOS = ["Acordos", "Sienge", "Checklist", "Oystr", "Presto", "Legal Intelligence", "Deep Legal"];
 
 let dados = null;
+// Mapa de "CNPJ + produto" → {data, cs} pra marcar quem já foi entrevistado
+let entrevistasMap = {};
+
+// === Histórico de entrevistas (lê do Apps Script, com cache de 10min) ===
+async function carregarEntrevistas() {
+  if (!APPS_SCRIPT_URL) return;
+  const cacheKey = "entrevistas_cache";
+  const cacheTimeKey = "entrevistas_cache_time";
+  const TEN_MIN = 10 * 60 * 1000;
+  const cachedTime = parseInt(localStorage.getItem(cacheTimeKey) || "0");
+  const cached = localStorage.getItem(cacheKey);
+  if (cached && Date.now() - cachedTime < TEN_MIN) {
+    aplicarEntrevistas(JSON.parse(cached));
+    return;
+  }
+  try {
+    const r = await fetch(APPS_SCRIPT_URL);
+    const data = await r.json();
+    if (data.entrevistas) {
+      localStorage.setItem(cacheKey, JSON.stringify(data.entrevistas));
+      localStorage.setItem(cacheTimeKey, String(Date.now()));
+      aplicarEntrevistas(data.entrevistas);
+    }
+  } catch (e) {
+    console.warn("Não consegui carregar histórico de entrevistas:", e);
+  }
+}
+
+function aplicarEntrevistas(lista) {
+  entrevistasMap = {};
+  lista.forEach(ent => {
+    const key = `${ent.cnpj}__${ent.produto}`;
+    // Mantém só a entrevista mais recente por (cnpj, produto)
+    if (!entrevistasMap[key] || ent.data > entrevistasMap[key].data) {
+      entrevistasMap[key] = {data: ent.data, cs: ent.cs};
+    }
+  });
+  // Re-renderiza a tabela se já carregou
+  if (dados) renderTabela();
+}
+
+function entrevistadoEm(cnpj, produto) {
+  return entrevistasMap[`${cnpj}__${produto}`] || null;
+}
+function formatDataCurta(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getFullYear()).slice(2)}`;
+}
 
 // === Identificação do CS (com normalização) ===
 function normalizarNome(s) {
@@ -135,7 +189,13 @@ function renderTabela() {
     `;
     PRODUTOS.forEach(p => {
       const v = c.fits[p] || "—";
-      html += `<td><span class="fit-cell ${fitClass(v)}">${v}</span></td>`;
+      const ent = entrevistadoEm(c.cnpj, p);
+      if (ent) {
+        const tooltip = `Entrevistado em ${formatDataCurta(ent.data)} por ${ent.cs || "?"}`;
+        html += `<td><span class="fit-cell ${fitClass(v)} entrevistado" title="${escape(tooltip)}">✓ ${v}</span></td>`;
+      } else {
+        html += `<td><span class="fit-cell ${fitClass(v)}">${v}</span></td>`;
+      }
     });
     html += `<td><button class="analisar" data-cnpj="${c.cnpj}">Analisar →</button></td>`;
     tr.innerHTML = html;
@@ -180,4 +240,5 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("busca").addEventListener("input", renderTabela);
   document.getElementById("fit-filter").addEventListener("change", renderTabela);
   carregar();
+  carregarEntrevistas();
 });

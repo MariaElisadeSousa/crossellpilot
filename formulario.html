@@ -14,8 +14,22 @@
     </div>
     <div class="meta">
       <span id="cs-nome-display"></span>
+      <button id="btn-trocar-cs" class="troca-cs" style="display:none;">Trocar CS</button>
     </div>
   </header>
+
+  <!-- Modal de identificação de CS -->
+  <div id="modal-cs" class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <h2>Quem está usando a ferramenta?</h2>
+      <p>Pra identificar suas qualificações na planilha, digita seu nome (você só preenche uma vez — fica salvo no navegador).</p>
+      <input type="text" id="modal-cs-input" placeholder="Seu nome completo (ex: Maria Sousa)" autocomplete="name">
+      <div class="erro" id="modal-cs-erro"></div>
+      <div class="btn-bar">
+        <button id="modal-cs-confirma" class="btn btn-primary">Confirmar</button>
+      </div>
+    </div>
+  </div>
 
   <div class="form-page">
     <div id="cliente-info" class="cliente-info">
@@ -48,7 +62,7 @@
     <!-- BLOCO TRONCO -->
     <div id="bloco-tronco" class="bloco hidden">
       <h2>Bloco comum — Tronco</h2>
-      <p style="color:#57606a; margin-bottom:12px;">Roda em todo atendimento, antes de qualquer ramificação.</p>
+      <p style="color:#57606a; margin-bottom:12px;">5 perguntas rápidas que rodam em todo atendimento.</p>
       <div id="tronco-perguntas"></div>
     </div>
 
@@ -58,10 +72,25 @@
     <!-- BLOCO FINAL — ESPAÇO ABERTO -->
     <div id="bloco-final" class="bloco hidden">
       <h2>Espaço aberto — comentários do CS</h2>
-      <p style="color:#57606a; margin-bottom:12px;">Único lugar do formulário com campo livre. Preencha após a reunião o que fizer sentido.</p>
+      <p style="color:#57606a; margin-bottom:12px;">Decisor pra repassar pro comercial e campos livres pra contexto qualitativo. Preencha após a reunião o que fizer sentido.</p>
       <div id="final-perguntas"></div>
       <div class="btn-bar">
-        <button id="btn-enviar" class="btn btn-primary">Finalizar e enviar</button>
+        <button id="btn-revisar" class="btn btn-primary">Ver resumo final →</button>
+      </div>
+    </div>
+
+    <!-- TELA DE RESUMO ANTES DO ENVIO -->
+    <div id="bloco-resumo" class="bloco hidden">
+      <div class="resumo-pre-envio">
+        <h2>Resumo da reunião — pronto pra repassar</h2>
+        <p class="nota">Esse é o resumo formatado da reunião. Você pode copiar e colar no forms do CRM pro comercial. Confira se está tudo certo antes de confirmar o envio (que grava na planilha de respostas).</p>
+        <div id="resumo-texto" class="resumo-texto"></div>
+      </div>
+      <div class="btn-bar">
+        <button id="btn-voltar-resumo" class="btn btn-secondary">← Voltar e ajustar</button>
+        <button id="btn-copiar-resumo" class="btn btn-secondary">📋 Copiar resumo</button>
+        <span id="copy-feedback" class="copy-feedback">Copiado!</span>
+        <button id="btn-confirmar-envio" class="btn btn-primary">Confirmar e enviar</button>
       </div>
     </div>
 

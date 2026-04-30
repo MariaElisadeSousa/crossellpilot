@@ -11,8 +11,8 @@
   ],
   "tronco": [
     {
-      "id": "T1a",
-      "pergunta": "Hoje, como está estruturado o jurídico de vocês? (tamanho do time)",
+      "id": "T1",
+      "pergunta": "Como está estruturado o jurídico de vocês hoje? (tamanho do time)",
       "opcoes": [
         "Não tem time formal — outras áreas absorvem",
         "Time pequeno (1-3 pessoas)",
@@ -24,8 +24,8 @@
       "tipo": "single"
     },
     {
-      "id": "T1b",
-      "pergunta": "E áreas cobertas (marcar todas que valem):",
+      "id": "T2",
+      "pergunta": "Quais áreas o jurídico cobre? (marque todas que se aplicam)",
       "opcoes": [
         "Contencioso",
         "Consultivo / Contratos",
@@ -37,8 +37,8 @@
       "tipo": "multi"
     },
     {
-      "id": "T2a",
-      "pergunta": "Como é o volume de processos / contratos / demandas que vocês lidam por mês?",
+      "id": "T3",
+      "pergunta": "Volume mensal de processos, contratos ou demandas?",
       "opcoes": [
         "Baixo (até 50/mês)",
         "Médio (50 a 500/mês)",
@@ -50,47 +50,8 @@
       "tipo": "single"
     },
     {
-      "id": "T2b",
-      "pergunta": "E esse volume — como vem se comportando?",
-      "opcoes": [
-        "Crescendo de forma consistente",
-        "Estável",
-        "Caindo / em redução",
-        "Sazonal / oscila bastante",
-        "Não acompanhamos",
-        "Outro"
-      ],
-      "tipo": "single"
-    },
-    {
-      "id": "T3a",
-      "pergunta": "Hoje vocês usam o Projuris mais pra operação ou também pra gestão estratégica?",
-      "opcoes": [
-        "Operação + gestão estratégica forte",
-        "Operação + alguma gestão",
-        "Praticamente só operação",
-        "Uso parcial — algumas áreas usam, outras não",
-        "Subutilizado — usa pouco do potencial",
-        "Outro"
-      ],
-      "tipo": "single"
-    },
-    {
-      "id": "T3b",
-      "pergunta": "E tem alguma área que ainda roda fora do sistema?",
-      "opcoes": [
-        "Não, tudo dentro do Projuris",
-        "Sim, controles em Excel/planilha",
-        "Sim, comunicação por e-mail / WhatsApp",
-        "Sim, controles em sistemas paralelos",
-        "Sim, processos manuais / em papel",
-        "Outro"
-      ],
-      "tipo": "multi"
-    },
-    {
       "id": "T4",
-      "pergunta": "O que mais incomoda hoje na forma como vocês gerenciam o jurídico? (até 3)",
+      "pergunta": "O que mais incomoda hoje na forma como gerenciam o jurídico? (marque até 3)",
       "opcoes": [
         "Falta de controle / visibilidade",
         "Retrabalho operacional / dependência de pessoas",
@@ -107,18 +68,6 @@
     },
     {
       "id": "T5",
-      "pergunta": "Vocês veem o jurídico mais como área operacional ou como área estratégica dentro da empresa?",
-      "opcoes": [
-        "Estratégica — participa de decisões da empresa",
-        "Caminhando pra estratégica — em transição",
-        "Operacional, mas com pressão pra evoluir",
-        "Operacional e sem demanda de evolução",
-        "Outro"
-      ],
-      "tipo": "single"
-    },
-    {
-      "id": "T6",
       "pergunta": "Esse tema está hoje na lista de prioridades de vocês?",
       "opcoes": [
         "Top 3 prioridades atuais",
@@ -127,21 +76,6 @@
         "Não é prioridade no momento"
       ],
       "tipo": "single"
-    },
-    {
-      "id": "T7",
-      "pergunta": "Quem mais precisaria estar envolvido numa decisão como essa?",
-      "opcoes": [
-        "Gerente / coordenador jurídico",
-        "Head / diretor jurídico",
-        "CFO / financeiro",
-        "CEO / diretoria executiva",
-        "TI / Tecnologia",
-        "Compras / Procurement",
-        "É o próprio interlocutor",
-        "Outro"
-      ],
-      "tipo": "multi"
     }
   ],
   "produtos": {
@@ -601,20 +535,33 @@
     }
   },
   "final": [
+    {
+      "id": "F0",
+      "pergunta": "Decisor que precisa estar envolvido na próxima conversa? (marque todos que se aplicam)",
+      "opcoes": [
+        "Gerente / coordenador jurídico",
+        "Head / diretor jurídico",
+        "CFO / financeiro",
+        "CEO / diretoria executiva",
+        "TI / Tecnologia",
+        "Compras / Procurement",
+        "É o próprio interlocutor",
+        "Outro"
+      ],
+      "tipo": "multi"
+    },
     {"id": "F1", "pergunta": "Frase-gancho que o cliente verbalizou (a dor exata, palavra dele)", "tipo": "free_text"},
     {
       "id": "F2",
-      "pergunta": "Sensação geral do atendimento (clima, abertura, momento do cliente):",
-      "opcoes": ["Reunião muito produtiva — cliente engajado", "Boa, fluiu bem", "Mediana — cliente pouco aberto", "Difícil — cliente fechado / sem tempo", "Outro"]
+      "pergunta": "Sensação geral do atendimento (e alguma consideração extra?)",
+      "opcoes": ["Reunião muito produtiva — cliente engajado", "Boa, fluiu bem", "Mediana — cliente pouco aberto", "Difícil — cliente fechado / sem tempo", "Outro"],
+      "extra_texto": "Considerações adicionais sobre a empresa, pessoa ou momento (opcional)"
     },
-    {"id": "F3", "pergunta": "Algum contexto qualitativo adicional sobre a empresa ou pessoa que ajude o comercial?", "tipo": "free_text"},
     {
-      "id": "F4",
+      "id": "F3",
       "pergunta": "O questionário ajudou na qualificação durante a reunião?",
-      "opcoes": ["Muito — facilitou e deu estrutura", "Razoavelmente — ajudou em parte", "Pouco — algumas perguntas se aplicavam, outras não", "Não ajudou / atrapalhou o fluxo natural", "Outro"]
-    },
-    {"id": "F5", "pergunta": "Senti falta de pergunta sobre…", "tipo": "free_text"},
-    {"id": "F6", "pergunta": "Pergunta(s) que não fizeram sentido ou que vou pular nas próximas:", "tipo": "free_text"},
-    {"id": "F7", "pergunta": "Sugestão de melhoria (fluxo, alternativas, ordem):", "tipo": "free_text"}
+      "opcoes": ["Muito — facilitou e deu estrutura", "Razoavelmente — ajudou em parte", "Pouco — algumas perguntas se aplicavam, outras não", "Não ajudou / atrapalhou o fluxo natural", "Outro"],
+      "extra_texto": "Observações sobre as perguntas, sugestões de melhoria, perguntas que faltaram ou que vou pular nas próximas (opcional)"
+    }
   ]
 }

@@ -1,7 +1,7 @@
 // === Cross-sell Empresas — Formulário Adaptativo ===
  
 // COLE AQUI A URL DO APPS SCRIPT QUANDO PUBLICAR (instruções no README.md)
-const APPS_SCRIPT_URL = ""; // ex: "https://script.google.com/macros/s/AKfyc.../exec"
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd98iOapWRyGcXmig7eLcG0kxP5SQtPSM1GVrvSbbcwDmXJM0TIdtdutVE34nLbuoEVQ/exec"; // ex: "https://script.google.com/macros/s/AKfyc.../exec"
  
 let cliente = null;
 let questoes = null;

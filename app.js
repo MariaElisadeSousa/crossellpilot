@@ -2,13 +2,17 @@
 
 // Cole aqui a MESMA URL do Apps Script que está no formulario.js (sem essa URL,
 // a sinalização "já entrevistado" não funciona — o resto da página funciona normalmente).
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd98iOapWRyGcXmig7eLcG0kxP5SQtPSM1GVrvSbbcwDmXJM0TIdtdutVE34nLbuoEVQ/exec";
+const APPS_SCRIPT_URL = "";
 
 const PRODUTOS = ["Acordos", "Sienge", "Checklist", "Oystr", "Presto", "Legal Intelligence", "Deep Legal"];
 
 let dados = null;
 // Mapa de "CNPJ + produto" → {data, cs} pra marcar quem já foi entrevistado
 let entrevistasMap = {};
+
+// Flag pra controlar se o auto-filtro pelo CS está ligado.
+// Quando o usuário clica "Ver todos", a gente lembra a escolha enquanto a sessão durar.
+let autoFiltrarPorCS = true;
 
 // === Histórico de entrevistas (lê do Apps Script, com cache de 10min) ===
 async function carregarEntrevistas() {
@@ -39,12 +43,10 @@ function aplicarEntrevistas(lista) {
   entrevistasMap = {};
   lista.forEach(ent => {
     const key = `${ent.cnpj}__${ent.produto}`;
-    // Mantém só a entrevista mais recente por (cnpj, produto)
     if (!entrevistasMap[key] || ent.data > entrevistasMap[key].data) {
       entrevistasMap[key] = {data: ent.data, cs: ent.cs};
     }
   });
-  // Re-renderiza a tabela se já carregou
   if (dados) renderTabela();
 }
 
@@ -58,28 +60,12 @@ function formatDataCurta(iso) {
   return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getFullYear()).slice(2)}`;
 }
 
-// === Identificação do CS (com normalização) ===
-function normalizarNome(s) {
-  if (!s) return "";
-  return s
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase()
-    .split(" ")
-    .filter(Boolean)
-    .map(w => {
-      // Mantém preposições/artigos curtos em minúsculo no meio do nome
-      if (["da", "de", "do", "das", "dos", "e"].includes(w)) return w;
-      return w.charAt(0).toUpperCase() + w.slice(1);
-    })
-    .join(" ");
-}
+// === Identificação do CS ===
 function getCSNome() { return localStorage.getItem("cs_nome") || ""; }
 function setCSNome(v) {
-  const n = normalizarNome(v);
-  if (n) localStorage.setItem("cs_nome", n);
+  if (v) localStorage.setItem("cs_nome", v);
   atualizarHeaderCS();
-  return n;
+  return v;
 }
 function limparCSNome() {
   localStorage.removeItem("cs_nome");
@@ -98,33 +84,57 @@ function atualizarHeaderCS() {
   }
 }
 
-// === Modal ===
+// === Modal de CS (agora dropdown) ===
+function popularDropdownCSModal() {
+  const sel = document.getElementById("modal-cs-select");
+  if (!sel || !dados || !dados.lista_cs) return;
+  sel.innerHTML = '<option value="">— selecione seu nome —</option>';
+  dados.lista_cs.forEach(cs => {
+    const opt = document.createElement("option");
+    opt.value = cs;
+    opt.textContent = cs;
+    sel.appendChild(opt);
+  });
+}
+
 function abrirModalCS(forcar) {
   const modal = document.getElementById("modal-cs");
-  const input = document.getElementById("modal-cs-input");
+  const sel = document.getElementById("modal-cs-select");
   const erro = document.getElementById("modal-cs-erro");
   modal.style.display = "flex";
-  input.value = forcar ? getCSNome() : "";
+  sel.value = forcar ? getCSNome() : "";
   erro.textContent = "";
-  input.focus();
+  sel.focus();
 }
 function fecharModalCS() {
   document.getElementById("modal-cs").style.display = "none";
 }
 function confirmarCS() {
-  const input = document.getElementById("modal-cs-input");
+  const sel = document.getElementById("modal-cs-select");
   const erro = document.getElementById("modal-cs-erro");
-  const nome = input.value.trim();
-  if (nome.length < 3) {
-    erro.textContent = "Por favor, digite seu nome completo (mínimo 3 letras).";
-    return;
-  }
-  if (!nome.includes(" ")) {
-    erro.textContent = "Use nome e sobrenome (pra evitar confusão entre CSs com mesmo primeiro nome).";
+  const nome = sel.value;
+  if (!nome) {
+    erro.textContent = "Selecione seu nome na lista.";
     return;
   }
   setCSNome(nome);
   fecharModalCS();
+  autoFiltrarPorCS = true;
+  aplicarAutoFiltro();
+  renderTabela();
+}
+
+// === Auto-filtro: quando o CS se identifica, mostra só a carteira dele ===
+function aplicarAutoFiltro() {
+  const csNome = getCSNome();
+  const csSelect = document.getElementById("cs-select");
+  const info = document.getElementById("auto-filter-info");
+  if (autoFiltrarPorCS && csNome && csSelect && dados && dados.lista_cs.includes(csNome)) {
+    csSelect.value = csNome;
+    if (info) info.classList.add("visible");
+  } else {
+    if (info) info.classList.remove("visible");
+  }
 }
 
 // === Carregar dados ===
@@ -132,6 +142,9 @@ async function carregar() {
   const r = await fetch("clientes.json");
   dados = await r.json();
   popularCarteiras();
+  popularDropdownCS();
+  popularDropdownCSModal();
+  aplicarAutoFiltro();
   renderTabela();
 }
 
@@ -145,17 +158,30 @@ function popularCarteiras() {
   });
 }
 
+function popularDropdownCS() {
+  const sel = document.getElementById("cs-select");
+  if (!sel || !dados.lista_cs) return;
+  dados.lista_cs.forEach(cs => {
+    const opt = document.createElement("option");
+    opt.value = cs;
+    opt.textContent = cs;
+    sel.appendChild(opt);
+  });
+}
+
 function fitClass(v) {
   if (!v || v === "—") return "fit-empty";
   return "fit-" + v.replace(" ", "-");
 }
 
 function renderTabela() {
+  const csFilter = document.getElementById("cs-select").value;
   const carteira = document.getElementById("carteira-select").value;
   const busca = document.getElementById("busca").value.toLowerCase().trim();
   const fitFilter = document.getElementById("fit-filter").value;
 
   let lista = dados.clientes;
+  if (csFilter) lista = lista.filter(c => (c.cs || "") === csFilter);
   if (carteira) lista = lista.filter(c => c.carteira === carteira);
   if (busca) lista = lista.filter(c =>
     (c.nome || "").toLowerCase().includes(busca) ||
@@ -171,7 +197,7 @@ function renderTabela() {
 
   const body = document.getElementById("tabela-body");
   if (lista.length === 0) {
-    body.innerHTML = '<tr><td colspan="13" class="empty-state">Nenhum cliente bateu com os filtros.</td></tr>';
+    body.innerHTML = '<tr><td colspan="15" class="empty-state">Nenhum cliente bateu com os filtros.</td></tr>';
     return;
   }
 
@@ -183,6 +209,8 @@ function renderTabela() {
     let html = `
       <td class="cnpj">${formatCnpj(c.cnpj)}</td>
       <td class="nome" title="${escape(c.nome)}">${escape(c.nome)}</td>
+      <td>${escape(c.cs || "—")}</td>
+      <td class="canal" title="${escape(c.canal_projuris || "")}">${escape(c.canal_projuris || "—")}</td>
       <td class="carteira-${c.carteira}">${c.carteira || "—"}</td>
       <td>${c.porte || "—"}</td>
       <td>${c.hs ?? "—"}</td>
@@ -204,7 +232,7 @@ function renderTabela() {
 
   if (lista.length > RENDER_LIMIT) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="13" class="empty-state">+${lista.length - RENDER_LIMIT} clientes não exibidos. Refine os filtros pra ver os demais.</td>`;
+    tr.innerHTML = `<td colspan="15" class="empty-state">+${lista.length - RENDER_LIMIT} clientes não exibidos. Refine os filtros pra ver os demais.</td>`;
     body.appendChild(tr);
   }
 
@@ -228,17 +256,31 @@ function escape(s) {
 
 document.addEventListener("DOMContentLoaded", () => {
   atualizarHeaderCS();
-  if (!getCSNome()) abrirModalCS();
 
   document.getElementById("modal-cs-confirma").addEventListener("click", confirmarCS);
-  document.getElementById("modal-cs-input").addEventListener("keydown", e => {
-    if (e.key === "Enter") confirmarCS();
+  document.getElementById("modal-cs-select").addEventListener("change", () => {
+    document.getElementById("modal-cs-erro").textContent = "";
   });
   document.getElementById("btn-trocar-cs").addEventListener("click", () => abrirModalCS(true));
 
+  document.getElementById("cs-select").addEventListener("change", () => {
+    autoFiltrarPorCS = false;
+    document.getElementById("auto-filter-info").classList.remove("visible");
+    renderTabela();
+  });
   document.getElementById("carteira-select").addEventListener("change", renderTabela);
   document.getElementById("busca").addEventListener("input", renderTabela);
   document.getElementById("fit-filter").addEventListener("change", renderTabela);
-  carregar();
+
+  document.getElementById("btn-ver-todos").addEventListener("click", () => {
+    autoFiltrarPorCS = false;
+    document.getElementById("cs-select").value = "";
+    document.getElementById("auto-filter-info").classList.remove("visible");
+    renderTabela();
+  });
+
+  carregar().then(() => {
+    if (!getCSNome()) abrirModalCS();
+  });
   carregarEntrevistas();
 });

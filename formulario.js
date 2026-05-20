@@ -1,33 +1,31 @@
-// === Cross-sell Empresas — Formulário Adaptativo ===
+// === Cross-sell Empresas — Formulário Adaptativo (modo wizard) ===
 
 // COLE AQUI A URL DO APPS SCRIPT QUANDO PUBLICAR (instruções no README.md)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd98iOapWRyGcXmig7eLcG0kxP5SQtPSM1GVrvSbbcwDmXJM0TIdtdutVE34nLbuoEVQ/exec"; // ex: "https://script.google.com/macros/s/AKfyc.../exec"
+const APPS_SCRIPT_URL = ""; // ex: "https://script.google.com/macros/s/AKfyc.../exec"
 
 let cliente = null;
 let questoes = null;
+let dadosGlobal = null; // payload do clientes.json (pra lista_cs no modal)
 let respostas = {
   meta: {},
   confirmador: {},
   tronco: {},
   produtos: {},
+  encerramento: {},
   final: {}
 };
 
+// Estado do wizard
+let state = { steps: [], idx: 0 };
+
 const PRODUTOS = ["Acordos", "Sienge", "Checklist", "Oystr", "Presto", "Legal Intelligence", "Deep Legal"];
 
-// === Identificação do CS (mesma lógica do app.js) ===
-function normalizarNome(s) {
-  if (!s) return "";
-  return s.trim().replace(/\s+/g, " ").toLowerCase().split(" ").filter(Boolean)
-    .map(w => ["da","de","do","das","dos","e"].includes(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
+// === Identificação do CS (dropdown da lista oficial) ===
 function getCSNome() { return localStorage.getItem("cs_nome") || ""; }
 function setCSNome(v) {
-  const n = normalizarNome(v);
-  if (n) localStorage.setItem("cs_nome", n);
+  if (v) localStorage.setItem("cs_nome", v);
   atualizarHeaderCS();
-  return n;
+  return v;
 }
 function atualizarHeaderCS() {
   const display = document.getElementById("cs-nome-display");
@@ -36,24 +34,35 @@ function atualizarHeaderCS() {
   display.textContent = nome ? `CS: ${nome}` : "";
   if (btnTrocar) btnTrocar.style.display = nome ? "inline-block" : "none";
 }
+function popularDropdownCSModal() {
+  const sel = document.getElementById("modal-cs-select");
+  if (!sel || !dadosGlobal || !dadosGlobal.lista_cs) return;
+  sel.innerHTML = '<option value="">— selecione seu nome —</option>';
+  dadosGlobal.lista_cs.forEach(cs => {
+    const opt = document.createElement("option");
+    opt.value = cs;
+    opt.textContent = cs;
+    sel.appendChild(opt);
+  });
+}
 function abrirModalCS(forcar) {
   const modal = document.getElementById("modal-cs");
-  const input = document.getElementById("modal-cs-input");
+  const sel = document.getElementById("modal-cs-select");
   const erro = document.getElementById("modal-cs-erro");
   modal.style.display = "flex";
-  input.value = forcar ? getCSNome() : "";
+  sel.value = forcar ? getCSNome() : "";
   erro.textContent = "";
-  input.focus();
+  sel.focus();
 }
 function fecharModalCS() { document.getElementById("modal-cs").style.display = "none"; }
 function confirmarCS() {
-  const input = document.getElementById("modal-cs-input");
+  const sel = document.getElementById("modal-cs-select");
   const erro = document.getElementById("modal-cs-erro");
-  const nome = input.value.trim();
-  if (nome.length < 3) { erro.textContent = "Por favor, digite seu nome completo (mínimo 3 letras)."; return; }
-  if (!nome.includes(" ")) { erro.textContent = "Use nome e sobrenome (pra evitar confusão entre CSs com mesmo primeiro nome)."; return; }
+  const nome = sel.value;
+  if (!nome) { erro.textContent = "Selecione seu nome na lista."; return; }
   setCSNome(nome);
   respostas.meta.cs = getCSNome();
+  renderClienteInfo();
   fecharModalCS();
 }
 
@@ -75,7 +84,7 @@ function formatDataHora() {
   return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-// === Histórico de entrevistas (lê cache do localStorage que app.js já populou) ===
+// === Histórico de entrevistas ===
 let entrevistasMap = {};
 function carregarEntrevistasCache() {
   const cached = localStorage.getItem("entrevistas_cache");
@@ -106,19 +115,24 @@ async function init() {
   if (!cnpj) { alert("CNPJ não fornecido."); window.location.href = "index.html"; return; }
 
   atualizarHeaderCS();
-  if (!getCSNome()) abrirModalCS();
 
   const [dadosResp, questoesResp] = await Promise.all([
     fetch("clientes.json").then(r => r.json()),
     fetch("questoes.json").then(r => r.json())
   ]);
+  dadosGlobal = dadosResp;
   questoes = questoesResp;
   cliente = dadosResp.clientes.find(c => c.cnpj === cnpj);
   if (!cliente) { alert("Cliente não encontrado."); window.location.href = "index.html"; return; }
 
+  popularDropdownCSModal();
+  if (!getCSNome()) abrirModalCS();
+
   respostas.meta.cs = getCSNome();
   respostas.meta.cnpj = cnpj;
   respostas.meta.cliente_nome = cliente.nome;
+  respostas.meta.cs_responsavel_carteira = cliente.cs || null;
+  respostas.meta.canal_projuris = cliente.canal_projuris || null;
   respostas.meta.iniciado_em = new Date().toISOString();
 
   carregarEntrevistasCache();
@@ -129,6 +143,7 @@ async function init() {
 
 function renderClienteInfo() {
   const div = document.getElementById("cliente-info");
+  if (!cliente) return;
   const fits = Object.entries(cliente.fits)
     .filter(([_, v]) => v && v !== "—")
     .map(([k, v]) => `<span class="badge">${k}: ${v}</span>`)
@@ -149,11 +164,14 @@ function renderClienteInfo() {
     <div class="meta" style="margin-top:6px;">
       <strong>Processos:</strong> carteira ${cliente.qtd_proc_carteira ?? "?"} / empresa ${cliente.qtd_proc_empresa ?? "?"}
     </div>
+    <div class="responsavel">
+      CS responsável: ${escape(cliente.cs || "—")} · Canal Projuris: ${escape(cliente.canal_projuris || "—")}
+    </div>
     <div class="badges">${fits}</div>
   `;
 }
 
-// === BLOCO 0 — CONFIRMADOR ===
+// =================== BLOCO 0 — CONFIRMADOR ===================
 function produtosComFit() {
   return PRODUTOS.filter(p => {
     const f = cliente.fits[p];
@@ -232,7 +250,6 @@ function renderConfirmador() {
   });
 
   document.getElementById("btn-iniciar").addEventListener("click", iniciarReuniao);
-  // Avalia o estado inicial (caso linhas tenham vindo pré-selecionadas como "descartar" por já entrevistado)
   atualizarBotaoIniciar();
 }
 
@@ -274,60 +291,144 @@ function iniciarReuniao() {
     };
     if (decisao === "entrevistar") produtosEntrevistar.push(p);
   });
+  produtosEntrevistar.sort((a, b) => PRODUTOS.indexOf(a) - PRODUTOS.indexOf(b));
   respostas.meta.produtos_entrevistar = produtosEntrevistar;
 
   document.getElementById("bloco-confirmador").classList.add("hidden");
-  renderTronco();
-  renderProdutos(produtosEntrevistar);
-  renderFinal();
-  document.getElementById("bloco-tronco").classList.remove("hidden");
-  document.getElementById("bloco-final").classList.remove("hidden");
+  document.getElementById("wizard").classList.remove("hidden");
+
+  produtosEntrevistar.forEach(p => { if (!respostas.produtos[p]) respostas.produtos[p] = {}; });
+
+  buildSteps();
+  state.idx = 0;
+  renderStep();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// === Renderização genérica de pergunta ===
-function renderPergunta(p, container, prefixId) {
-  const id = `${prefixId}_${p.id}`;
-  const tipo = p.tipo || "single";
+// =================== WIZARD — STEPS ===================
+function inferirRamoAcordos() {
+  const ac4 = respostas.produtos.Acordos?.AC_4;
+  if (!ac4) return null;
+  const cfg = questoes.produtos.Acordos.perguntas_iniciais.find(p => p.id === "AC_4");
+  if (!cfg) return null;
+  const valor = Array.isArray(ac4) ? ac4[0] : ac4;
+  const base = String(valor).split(":")[0].trim();
+  const op = cfg.opcoes.find(o => {
+    const texto = typeof o === "object" ? o.texto : o;
+    return texto === valor || texto === base || String(valor).startsWith(texto);
+  });
+  return op?.ramo || null;
+}
+
+function inferirModuloPassivo() {
+  const r = respostas.produtos.Acordos?.AC_PA1;
+  if (!r) return null;
+  const cfg = (questoes.produtos.Acordos.ramos.passivo || []).find(p => p.id === "AC_PA1");
+  if (!cfg) return null;
+  const valor = Array.isArray(r) ? r[0] : r;
+  const base = String(valor).split(":")[0].trim();
+  const op = cfg.opcoes.find(o => {
+    const texto = typeof o === "object" ? o.texto : o;
+    return texto === valor || texto === base || String(valor).startsWith(texto);
+  });
+  return op?.modulo || null;
+}
+
+function buildSteps() {
+  const steps = [];
+  questoes.tronco.forEach(p => steps.push({ tipo: "tronco_q", pergunta: p }));
+  (respostas.meta.produtos_entrevistar || []).forEach(produto => {
+    const cfg = questoes.produtos[produto];
+    if (!cfg) return;
+    if (produto === "Acordos") {
+      steps.push({ tipo: "acordos_iniciais", produto });
+      const ramo = inferirRamoAcordos();
+      const subs = [];
+      if (ramo === "passivo") subs.push(...(cfg.ramos.passivo || []));
+      else if (ramo === "ativo") subs.push(...(cfg.ramos.ativo || []));
+      else if (ramo === "misto") { subs.push(...(cfg.ramos.passivo || [])); subs.push(...(cfg.ramos.ativo || [])); }
+      subs.forEach(p => steps.push({ tipo: "acordos_ramo_q", produto, pergunta: p, ramo }));
+      steps.push({ tipo: "acordos_final_q", produto, pergunta: cfg.pergunta_final_comum });
+    } else if (cfg.tipo === "ponte") {
+      steps.push({ tipo: "ponte_unica", produto });
+    } else {
+      steps.push({ tipo: "produto_q", produto, pergunta: cfg.pergunta_chave });
+      (cfg.essenciais || []).forEach(p => steps.push({ tipo: "produto_q", produto, pergunta: p }));
+    }
+  });
+  steps.push({ tipo: "encerramento", pergunta: questoes.encerramento_cliente });
+  questoes.final.forEach(p => steps.push({ tipo: "final_q", pergunta: p }));
+  state.steps = steps;
+}
+
+function stepIgual(a, b) {
+  if (!a || !b) return false;
+  if (a.tipo !== b.tipo) return false;
+  if (a.produto !== b.produto) return false;
+  if (a.tipo === "acordos_iniciais" || a.tipo === "ponte_unica") return true;
+  return (a.pergunta?.id) === (b.pergunta?.id);
+}
+
+function recompilarSteps() {
+  const stepAtual = state.steps[state.idx];
+  buildSteps();
+  const novoIdx = state.steps.findIndex(s => stepIgual(s, stepAtual));
+  state.idx = novoIdx >= 0 ? novoIdx : Math.min(state.idx, state.steps.length - 1);
+}
+
+// =================== RENDER PERGUNTA (genérico, com restore) ===================
+function renderPergunta(p, container, pre, opts) {
+  opts = opts || {};
   const wrap = document.createElement("div");
   wrap.className = "pergunta";
   wrap.dataset.id = p.id;
-
-  const titulo = document.createElement("div");
-  titulo.className = "pergunta-texto";
-  titulo.innerHTML = `<span class="id">${p.id}</span> ${escape(p.pergunta || p.fala || "")}`;
 
   if (p.fala) {
     const fala = document.createElement("div");
     fala.className = "fala-cs";
     fala.innerHTML = `Fala pro cliente: "${escape(p.fala)}"`;
     wrap.appendChild(fala);
-  } else {
+  }
+  if (p.pergunta) {
+    const titulo = document.createElement("div");
+    titulo.className = "pergunta-texto";
+    titulo.innerHTML = `<span class="id">${p.id}</span> ${escape(p.pergunta)}`;
     wrap.appendChild(titulo);
   }
-
   if (p.instrucao) {
     const inst = document.createElement("div");
-    inst.style.cssText = "color:#777; font-size:12px; font-style:italic; margin-bottom:6px;";
+    inst.className = "instrucao";
     inst.textContent = p.instrucao;
     wrap.appendChild(inst);
   }
+  if (p.condicional) {
+    const cond = document.createElement("div");
+    cond.style.cssText = "color:#7f5e00; font-size:11.5px; font-style:italic; margin-bottom:6px;";
+    cond.textContent = `(Pergunta condicional — ${p.condicional}. Pule se não se aplicar.)`;
+    wrap.appendChild(cond);
+  }
+
+  const tipo = p.tipo || "single";
+  const name = `Q_${p.id}`;
 
   if (tipo === "free_text") {
     const ta = document.createElement("textarea");
     ta.dataset.id = p.id;
+    if (pre !== undefined && pre !== null) ta.value = pre;
     wrap.appendChild(ta);
     container.appendChild(wrap);
-    return;
+    return wrap;
   }
 
   const opcoes = p.opcoes || [];
   const inputType = tipo === "multi" ? "checkbox" : "radio";
+  const preSet = new Set(Array.isArray(pre) ? pre : (pre !== undefined && pre !== null ? [pre] : []));
 
   opcoes.forEach((op, i) => {
     const opcaoTexto = typeof op === "string" ? op : op.texto;
     const opcaoTipo = typeof op === "object" ? op.tipo : null;
-    const opcaoId = `${id}_${i}`;
+    const isFreeOption = opcaoTipo === "free" || opcaoTexto.startsWith("Outro");
+
     const lbl = document.createElement("label");
     lbl.className = "opcao";
     if (opcaoTipo === "interest") lbl.classList.add("interest");
@@ -335,10 +436,19 @@ function renderPergunta(p, container, prefixId) {
 
     const input = document.createElement("input");
     input.type = inputType;
-    input.name = id;
+    input.name = name;
     input.value = opcaoTexto;
     input.dataset.tipo = opcaoTipo || "";
-    input.id = opcaoId;
+
+    let marcado = false;
+    let detalheLivre = "";
+    preSet.forEach(v => {
+      const sv = String(v);
+      if (sv === opcaoTexto) marcado = true;
+      else if (sv.startsWith(opcaoTexto + ":")) { marcado = true; detalheLivre = sv.slice(opcaoTexto.length + 1).trim(); }
+    });
+    input.checked = marcado;
+
     lbl.appendChild(input);
     lbl.appendChild(document.createTextNode(opcaoTexto));
 
@@ -350,191 +460,381 @@ function renderPergunta(p, container, prefixId) {
       lbl.appendChild(tag);
     }
 
-    if (opcaoTexto.startsWith("Outro") || opcaoTipo === "free") {
+    if (isFreeOption) {
       const livre = document.createElement("input");
       livre.type = "text";
-      livre.className = "free-input";
+      livre.className = "free-input" + (marcado ? " visible" : "");
       livre.placeholder = "detalhe…";
-      livre.dataset.id = `${p.id}__livre_${i}`;
+      livre.dataset.livreFor = name;
+      if (detalheLivre) livre.value = detalheLivre;
       input.addEventListener("change", () => livre.classList.toggle("visible", input.checked));
       lbl.appendChild(livre);
     }
     wrap.appendChild(lbl);
   });
 
-  // Campo de texto extra opcional (embaixo das opções, pra "consideração adicional")
   if (p.extra_texto) {
     const ta = document.createElement("textarea");
     ta.className = "extra-textarea";
     ta.dataset.extraId = p.id;
     ta.placeholder = p.extra_texto;
-    ta.style.cssText = "margin-top: 10px; min-height: 60px;";
+    if (opts.preExtra !== undefined && opts.preExtra !== null) ta.value = opts.preExtra;
     wrap.appendChild(ta);
   }
 
   container.appendChild(wrap);
+  return wrap;
 }
 
-function renderTronco() {
-  const c = document.getElementById("tronco-perguntas");
-  c.innerHTML = "";
-  questoes.tronco.forEach(p => renderPergunta(p, c, "TR"));
-}
-
-function renderProdutos(lista) {
-  const c = document.getElementById("blocos-produtos");
-  c.innerHTML = "";
-  lista.forEach(produto => {
-    const cfg = questoes.produtos[produto];
-    if (!cfg) return;
-    const div = document.createElement("div");
-    div.className = "bloco";
-    div.dataset.produto = produto;
-
-    if (cfg.tipo === "ponte") {
-      div.classList.add("ponte");
-      div.innerHTML = `<h2>${produto}</h2>
-        <div class="nota">FORMATO PONTE/INDICAÇÃO — Como é fora do jurídico, o roteiro é curto. CS faz pergunta de contexto, oferece e identifica o contato certo pra repassar pro comercial.</div>`;
-      div.innerHTML += "<h3>Contexto</h3>";
-      const p1Wrap = document.createElement("div");
-      renderPergunta({...cfg.p1, tipo: "free_text"}, p1Wrap, "PROD");
-      div.appendChild(p1Wrap);
-      const p2Title = document.createElement("h3"); p2Title.textContent = "Oferta + identificação de quem cuida"; div.appendChild(p2Title);
-      const p2Wrap = document.createElement("div");
-      renderPergunta({id: cfg.p2.id, fala: cfg.p2.fala, opcoes: cfg.p2.opcoes}, p2Wrap, "PROD");
-      div.appendChild(p2Wrap);
-      const p3Title = document.createElement("h3"); p3Title.textContent = "Pedido de contato (se houve interesse)"; div.appendChild(p3Title);
-      const p3Wrap = document.createElement("div");
-      renderPergunta({id: cfg.p3.id, pergunta: cfg.p3.pergunta, opcoes: cfg.p3.opcoes}, p3Wrap, "PROD");
-      div.appendChild(p3Wrap);
-      const pitch = document.createElement("div");
-      pitch.className = "pitch-box";
-      pitch.innerHTML = `<strong>PITCH (CS → comercial):</strong>${escape(cfg.pitch)}`;
-      div.appendChild(pitch);
-    } else {
-      div.innerHTML = `<h2>${produto}</h2>`;
-      const pcTitle = document.createElement("h3"); pcTitle.textContent = "Pergunta-chave"; div.appendChild(pcTitle);
-      const pcWrap = document.createElement("div");
-      renderPergunta(cfg.pergunta_chave, pcWrap, "PROD");
-      div.appendChild(pcWrap);
-      const eTitle = document.createElement("h3"); eTitle.textContent = "Perguntas essenciais (qualificação)"; div.appendChild(eTitle);
-      cfg.essenciais.forEach(e => renderPergunta(e, div, "PROD"));
-      const alerta = document.createElement("div");
-      alerta.className = "descarte-alerta";
-      alerta.dataset.produto = produto;
-      alerta.textContent = "⚠ ≥2 marcações \"não é prioridade\" — modelo sugere descartar este produto.";
-      div.appendChild(alerta);
-      const aTitle = document.createElement("h3"); aTitle.textContent = "Informação adicional (opcional)"; div.appendChild(aTitle);
-      const nota = document.createElement("p"); nota.style.cssText = "color:#777; font-size:12px; margin-bottom:8px;";
-      nota.textContent = "Só rodar se sobrar tempo ou se cliente trouxer naturalmente.";
-      div.appendChild(nota);
-      cfg.adicionais.forEach(a => renderPergunta(a, div, "PROD"));
-      const sTitle = document.createElement("h3"); sTitle.textContent = "Sinais de oportunidade quente (CS marca durante a call)"; div.appendChild(sTitle);
-      cfg.sinais.forEach((s, i) => {
-        const lbl = document.createElement("label"); lbl.className = "opcao";
-        const inp = document.createElement("input"); inp.type = "checkbox";
-        inp.name = `SINAL_${produto}_${i}`; inp.value = s; inp.dataset.sinal = produto;
-        lbl.appendChild(inp); lbl.appendChild(document.createTextNode(" " + s));
-        div.appendChild(lbl);
-      });
-      const pitch = document.createElement("div");
-      pitch.className = "pitch-box";
-      pitch.innerHTML = `<strong>PITCH (CS → comercial):</strong>${escape(cfg.pitch)}`;
-      div.appendChild(pitch);
-    }
-
-    c.appendChild(div);
-  });
-
-  c.addEventListener("change", e => {
-    if (e.target.matches("input[type='radio'], input[type='checkbox']")) atualizarDescartes();
-  });
-}
-
-function atualizarDescartes() {
-  document.querySelectorAll("#blocos-produtos .bloco").forEach(bloco => {
-    const produto = bloco.dataset.produto;
-    if (!questoes.produtos[produto] || questoes.produtos[produto].tipo === "ponte") return;
-    const essenciais = questoes.produtos[produto].essenciais.map(e => e.id);
-    let count = 0;
-    essenciais.forEach(eid => {
-      const checked = bloco.querySelector(`input[name="PROD_${eid}"]:checked`);
-      if (checked && checked.dataset.tipo === "discard") count++;
-    });
-    const alerta = bloco.querySelector(".descarte-alerta");
-    if (alerta) alerta.classList.toggle("visible", count >= 2);
-  });
-}
-
-function renderFinal() {
-  const c = document.getElementById("final-perguntas");
-  c.innerHTML = "";
-  questoes.final.forEach(p => renderPergunta(p, c, "FINAL"));
-}
-
-// === Coleta + envio ===
-function coletarRespostas() {
-  respostas.tronco = {};
-  questoes.tronco.forEach(p => {
-    const r = coletarPergunta(p, "TR");
-    if (r !== undefined) respostas.tronco[p.id] = r;
-  });
-  respostas.produtos = {};
-  respostas.meta.produtos_entrevistar.forEach(produto => {
-    const cfg = questoes.produtos[produto];
-    if (!cfg) return;
-    const dados = {};
-    if (cfg.tipo === "ponte") {
-      [cfg.p1, cfg.p2, cfg.p3].forEach(p => {
-        const r = coletarPergunta(p, "PROD");
-        if (r !== undefined) dados[p.id] = r;
-      });
-    } else {
-      const r0 = coletarPergunta(cfg.pergunta_chave, "PROD");
-      if (r0 !== undefined) dados[cfg.pergunta_chave.id] = r0;
-      cfg.essenciais.forEach(e => { const r = coletarPergunta(e, "PROD"); if (r !== undefined) dados[e.id] = r; });
-      cfg.adicionais.forEach(a => { const r = coletarPergunta(a, "PROD"); if (r !== undefined) dados[a.id] = r; });
-      const sinais = [];
-      document.querySelectorAll(`input[data-sinal="${produto}"]:checked`).forEach(i => sinais.push(i.value));
-      if (sinais.length) dados.sinais_quentes = sinais;
-    }
-    respostas.produtos[produto] = dados;
-  });
-  respostas.final = {};
-  questoes.final.forEach(p => {
-    const r = coletarPergunta(p, "FINAL");
-    if (r !== undefined) respostas.final[p.id] = r;
-    if (p.extra_texto) {
-      const ta = document.querySelector(`textarea[data-extra-id="${p.id}"]`);
-      if (ta && ta.value.trim()) respostas.final[`${p.id}_extra`] = ta.value.trim();
-    }
-  });
-  respostas.meta.finalizado_em = new Date().toISOString();
-}
-
-function coletarPergunta(p, prefix) {
+// =================== COLETAR PERGUNTA ===================
+function coletarPergunta(p) {
   if (p.tipo === "free_text") {
     const ta = document.querySelector(`textarea[data-id="${p.id}"]`);
     return ta && ta.value.trim() ? ta.value.trim() : undefined;
   }
-  const inputs = document.querySelectorAll(`input[name="${prefix}_${p.id}"]:checked`);
+  const name = `Q_${p.id}`;
+  const inputs = document.querySelectorAll(`input[name="${name}"]:checked`);
   if (inputs.length === 0) return undefined;
   const valores = [];
   inputs.forEach(i => {
     let v = i.value;
     const livre = i.parentElement.querySelector(".free-input");
-    if (livre && livre.classList.contains("visible") && livre.value.trim()) v += `: ${livre.value.trim()}`;
+    if (livre && livre.classList.contains("visible") && livre.value.trim()) {
+      v += `: ${livre.value.trim()}`;
+    }
     valores.push(v);
   });
   return inputs[0].type === "radio" ? valores[0] : valores;
 }
 
-// === Tela de resumo ===
+// =================== RENDER STEP ===================
+function renderStep() {
+  const step = state.steps[state.idx];
+  const conteudo = document.getElementById("wizard-step-conteudo");
+  conteudo.innerHTML = "";
+
+  const tipoTag = document.getElementById("wizard-step-tipo");
+  const titulo = document.getElementById("wizard-step-titulo");
+  const subtitulo = document.getElementById("wizard-step-subtitulo");
+  const alerta = document.getElementById("wizard-step-descarte-alerta");
+  alerta.classList.remove("visible");
+  subtitulo.textContent = "";
+
+  switch (step.tipo) {
+    case "tronco_q": {
+      tipoTag.textContent = "TRONCO";
+      titulo.textContent = `Contexto geral · ${step.pergunta.id}`;
+      subtitulo.textContent = "Perguntas comuns a todos os atendimentos.";
+      renderPergunta(step.pergunta, conteudo, respostas.tronco[step.pergunta.id]);
+      if (step.pergunta.complemento) {
+        const wrap = document.createElement("div");
+        wrap.className = "complemento";
+        const tit = document.createElement("div");
+        tit.className = "compl-titulo";
+        tit.textContent = "Complemento";
+        wrap.appendChild(tit);
+        const compl = Object.assign({}, step.pergunta.complemento, { id: `${step.pergunta.id}_complemento` });
+        renderPergunta(compl, wrap, respostas.tronco[`${step.pergunta.id}_complemento`]);
+        conteudo.appendChild(wrap);
+      }
+      break;
+    }
+    case "acordos_iniciais": {
+      tipoTag.textContent = "ACORDOS · INICIAIS";
+      titulo.textContent = "Acordos — perguntas iniciais (1 tela)";
+      subtitulo.textContent = "Responda as 4 perguntas para identificar o polo. O pitch aparece no card lateral só depois disso.";
+      questoes.produtos.Acordos.perguntas_iniciais.forEach(p => {
+        renderPergunta(p, conteudo, respostas.produtos.Acordos?.[p.id]);
+      });
+      break;
+    }
+    case "acordos_ramo_q": {
+      const ramoLabel = step.ramo === "misto" ? "MISTO" : step.ramo.toUpperCase();
+      tipoTag.textContent = `ACORDOS · ${ramoLabel}`;
+      titulo.textContent = `Acordos (polo ${step.ramo}) · ${step.pergunta.id}`;
+      renderPergunta(step.pergunta, conteudo, respostas.produtos.Acordos?.[step.pergunta.id]);
+      break;
+    }
+    case "acordos_final_q": {
+      tipoTag.textContent = "ACORDOS · FINAL";
+      titulo.textContent = `Acordos · ${step.pergunta.id} (pergunta final)`;
+      renderPergunta(step.pergunta, conteudo, respostas.produtos.Acordos?.[step.pergunta.id]);
+      break;
+    }
+    case "produto_q": {
+      tipoTag.textContent = step.produto.toUpperCase();
+      titulo.textContent = `${step.produto} · ${step.pergunta.id}`;
+      renderPergunta(step.pergunta, conteudo, respostas.produtos[step.produto]?.[step.pergunta.id]);
+      atualizarDescarteAlerta(step.produto);
+      conteudo.addEventListener("change", () => atualizarDescarteAlerta(step.produto));
+      break;
+    }
+    case "ponte_unica": {
+      tipoTag.textContent = `${step.produto.toUpperCase()} · PONTE`;
+      titulo.textContent = `${step.produto} — ponte/indicação`;
+      subtitulo.textContent = "Formato curto: contexto, oferta, e identificação de quem cuida pra repassar pro comercial.";
+      const cfg = questoes.produtos[step.produto];
+      renderPergunta(Object.assign({}, cfg.p1, { tipo: "free_text" }), conteudo, respostas.produtos[step.produto]?.[cfg.p1.id]);
+      renderPergunta(cfg.p2, conteudo, respostas.produtos[step.produto]?.[cfg.p2.id]);
+      renderPergunta(cfg.p3, conteudo, respostas.produtos[step.produto]?.[cfg.p3.id]);
+      break;
+    }
+    case "encerramento": {
+      tipoTag.textContent = "ENCERRAMENTO COM CLIENTE";
+      titulo.textContent = "Última pergunta com o cliente";
+      subtitulo.textContent = "Antes de encerrar a reunião — pra repassar pro comercial.";
+      renderPergunta(step.pergunta, conteudo, respostas.encerramento[step.pergunta.id]);
+      break;
+    }
+    case "final_q": {
+      tipoTag.textContent = "PÓS-REUNIÃO · CS";
+      titulo.textContent = `Comentário do CS · ${step.pergunta.id}`;
+      subtitulo.textContent = "Preencha após a reunião (não é pra ler com o cliente).";
+      renderPergunta(step.pergunta, conteudo, respostas.final[step.pergunta.id], { preExtra: respostas.final[`${step.pergunta.id}_extra`] });
+      break;
+    }
+  }
+
+  renderSidebar(step);
+  renderProgress();
+  ajustarBotoes();
+}
+
+function atualizarDescarteAlerta(produto) {
+  const cfg = questoes.produtos[produto];
+  if (!cfg || cfg.tipo === "ponte") return;
+  const idsEssenciais = (cfg.essenciais || []).map(e => e.id);
+  let count = 0;
+  idsEssenciais.forEach(eid => {
+    const saved = respostas.produtos[produto]?.[eid];
+    const inputAtual = document.querySelector(`input[name="Q_${eid}"]:checked`);
+    if (inputAtual) {
+      if (inputAtual.dataset.tipo === "discard") count++;
+    } else if (saved) {
+      const ess = cfg.essenciais.find(e => e.id === eid);
+      const op = (ess.opcoes || []).find(o => typeof o === "object" && (o.texto === saved || String(saved).startsWith(o.texto + ":")));
+      if (op?.tipo === "discard") count++;
+    }
+  });
+  const alerta = document.getElementById("wizard-step-descarte-alerta");
+  alerta.classList.toggle("visible", count >= 2);
+}
+
+// =================== SIDEBAR — PITCH + SINAIS ===================
+function renderSidebar(step) {
+  const sb = document.getElementById("wizard-sidebar");
+  const semPitch = ["tronco_q", "encerramento", "final_q"];
+  if (semPitch.includes(step.tipo)) {
+    sb.classList.add("empty");
+    sb.innerHTML = `<p>Esse bloco não tem pitch — perguntas comuns ou pós-reunião.</p>`;
+    return;
+  }
+  if (step.tipo === "acordos_iniciais") {
+    sb.classList.add("empty");
+    sb.innerHTML = `<p><strong>Acordos:</strong> o pitch aparece aqui assim que você identificar o polo (AC_4) e seguir para o próximo passo.</p>`;
+    return;
+  }
+
+  sb.classList.remove("empty");
+  const produto = step.produto;
+  const cfg = questoes.produtos[produto];
+
+  let pitchHtml = "";
+  if (produto === "Acordos") {
+    const ramo = step.ramo || inferirRamoAcordos();
+    const pitches = cfg.pitches || {};
+    const modulo = inferirModuloPassivo();
+    const blocos = [];
+    if (ramo === "ativo") {
+      blocos.push({ titulo: "Pitch · Polo ativo", texto: pitches.ativo });
+    } else if (ramo === "passivo") {
+      if (modulo === "indenizatorio") blocos.push({ titulo: "Pitch · Passivo indenizatório", texto: pitches.passivo_indenizatorio });
+      else if (modulo === "consumidor") blocos.push({ titulo: "Pitch · Passivo consumidor", texto: pitches.passivo_consumidor });
+      else {
+        blocos.push({ titulo: "Pitch · Passivo indenizatório", texto: pitches.passivo_indenizatorio });
+        blocos.push({ titulo: "Pitch · Passivo consumidor", texto: pitches.passivo_consumidor });
+      }
+    } else if (ramo === "misto") {
+      blocos.push({ titulo: "Pitch · Polo ativo", texto: pitches.ativo });
+      if (modulo === "indenizatorio") blocos.push({ titulo: "Pitch · Passivo indenizatório", texto: pitches.passivo_indenizatorio });
+      else if (modulo === "consumidor") blocos.push({ titulo: "Pitch · Passivo consumidor", texto: pitches.passivo_consumidor });
+      else {
+        blocos.push({ titulo: "Pitch · Passivo indenizatório", texto: pitches.passivo_indenizatorio });
+        blocos.push({ titulo: "Pitch · Passivo consumidor", texto: pitches.passivo_consumidor });
+      }
+    }
+    pitchHtml = blocos.map(b => `
+      <div class="pitch-corpo">
+        <div class="pitch-titulo">${escape(b.titulo)}</div>
+        ${escape(b.texto)}
+      </div>
+    `).join("");
+  } else if (cfg.pitch) {
+    pitchHtml = `<div class="pitch-corpo">${escape(cfg.pitch)}</div>`;
+  }
+
+  let sinaisHtml = "";
+  if (cfg.sinais && cfg.sinais.length) {
+    const marcados = new Set(respostas.produtos[produto]?.sinais_quentes || []);
+    sinaisHtml = `
+      <div class="sinais-bloco">
+        <h4>Sinais quentes (marque durante a call)</h4>
+        ${cfg.sinais.map((s) => `
+          <label>
+            <input type="checkbox" data-sinal="${escape(produto)}" value="${escape(s)}"${marcados.has(s) ? " checked" : ""}>
+            ${escape(s)}
+          </label>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  sb.innerHTML = `
+    <span class="sb-tag">${escape(produto)}</span>
+    <h3>Pitch sugerido (CS → cliente / comercial)</h3>
+    ${pitchHtml || "<p>Sem pitch configurado.</p>"}
+    ${sinaisHtml}
+  `;
+
+  sb.querySelectorAll(`input[data-sinal]`).forEach(inp => {
+    inp.addEventListener("change", () => {
+      if (!respostas.produtos[produto]) respostas.produtos[produto] = {};
+      const marcados = Array.from(sb.querySelectorAll(`input[data-sinal="${produto}"]:checked`)).map(i => i.value);
+      respostas.produtos[produto].sinais_quentes = marcados;
+    });
+  });
+}
+
+// =================== PROGRESS + BOTÕES ===================
+function renderProgress() {
+  const total = state.steps.length;
+  const atual = state.idx + 1;
+  const pct = total ? Math.round((atual / total) * 100) : 0;
+  document.getElementById("wizard-progress-label").textContent = `Pergunta ${atual} de ${total}`;
+  document.getElementById("wizard-progress-bar").style.width = `${pct}%`;
+  const step = state.steps[state.idx];
+  document.getElementById("wizard-step-tag").textContent = bookmarkTag(step);
+}
+
+function bookmarkTag(step) {
+  if (step.tipo === "tronco_q") return "TRONCO";
+  if (step.tipo === "encerramento") return "ENCERRAMENTO";
+  if (step.tipo === "final_q") return "PÓS-REUNIÃO";
+  if (step.tipo === "ponte_unica") return `${step.produto} (ponte)`;
+  if (step.produto === "Acordos") {
+    if (step.tipo === "acordos_iniciais") return "ACORDOS · iniciais";
+    if (step.tipo === "acordos_ramo_q") return `ACORDOS · ${step.ramo}`;
+    if (step.tipo === "acordos_final_q") return "ACORDOS · final";
+  }
+  return step.produto || "—";
+}
+
+function ajustarBotoes() {
+  const btnVoltar = document.getElementById("btn-voltar");
+  const btnProximo = document.getElementById("btn-proximo");
+  btnVoltar.style.visibility = state.idx === 0 ? "hidden" : "visible";
+  btnProximo.textContent = state.idx === state.steps.length - 1 ? "Ver resumo final →" : "Próxima →";
+}
+
+// =================== NAVEGAÇÃO ===================
+function coletarStepAtual() {
+  const step = state.steps[state.idx];
+  switch (step.tipo) {
+    case "tronco_q": {
+      const r = coletarPergunta(step.pergunta);
+      if (r !== undefined) respostas.tronco[step.pergunta.id] = r;
+      else delete respostas.tronco[step.pergunta.id];
+      if (step.pergunta.complemento) {
+        const compl = Object.assign({}, step.pergunta.complemento, { id: `${step.pergunta.id}_complemento` });
+        const rc = coletarPergunta(compl);
+        if (rc !== undefined) respostas.tronco[compl.id] = rc;
+        else delete respostas.tronco[compl.id];
+      }
+      break;
+    }
+    case "acordos_iniciais": {
+      if (!respostas.produtos.Acordos) respostas.produtos.Acordos = {};
+      questoes.produtos.Acordos.perguntas_iniciais.forEach(p => {
+        const r = coletarPergunta(p);
+        if (r !== undefined) respostas.produtos.Acordos[p.id] = r;
+        else delete respostas.produtos.Acordos[p.id];
+      });
+      break;
+    }
+    case "acordos_ramo_q":
+    case "acordos_final_q": {
+      if (!respostas.produtos.Acordos) respostas.produtos.Acordos = {};
+      const r = coletarPergunta(step.pergunta);
+      if (r !== undefined) respostas.produtos.Acordos[step.pergunta.id] = r;
+      else delete respostas.produtos.Acordos[step.pergunta.id];
+      break;
+    }
+    case "produto_q": {
+      if (!respostas.produtos[step.produto]) respostas.produtos[step.produto] = {};
+      const r = coletarPergunta(step.pergunta);
+      if (r !== undefined) respostas.produtos[step.produto][step.pergunta.id] = r;
+      else delete respostas.produtos[step.produto][step.pergunta.id];
+      break;
+    }
+    case "ponte_unica": {
+      const cfg = questoes.produtos[step.produto];
+      if (!respostas.produtos[step.produto]) respostas.produtos[step.produto] = {};
+      [Object.assign({}, cfg.p1, { tipo: "free_text" }), cfg.p2, cfg.p3].forEach(p => {
+        const r = coletarPergunta(p);
+        if (r !== undefined) respostas.produtos[step.produto][p.id] = r;
+        else delete respostas.produtos[step.produto][p.id];
+      });
+      break;
+    }
+    case "encerramento": {
+      const r = coletarPergunta(step.pergunta);
+      if (r !== undefined) respostas.encerramento[step.pergunta.id] = r;
+      else delete respostas.encerramento[step.pergunta.id];
+      break;
+    }
+    case "final_q": {
+      const r = coletarPergunta(step.pergunta);
+      if (r !== undefined) respostas.final[step.pergunta.id] = r;
+      else delete respostas.final[step.pergunta.id];
+      if (step.pergunta.extra_texto) {
+        const ta = document.querySelector(`textarea[data-extra-id="${step.pergunta.id}"]`);
+        if (ta && ta.value.trim()) respostas.final[`${step.pergunta.id}_extra`] = ta.value.trim();
+        else delete respostas.final[`${step.pergunta.id}_extra`];
+      }
+      break;
+    }
+  }
+}
+
+function proximoStep() {
+  coletarStepAtual();
+  recompilarSteps();
+  if (state.idx >= state.steps.length - 1) {
+    abrirResumo();
+    return;
+  }
+  state.idx += 1;
+  renderStep();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function voltarStep() {
+  coletarStepAtual();
+  recompilarSteps();
+  if (state.idx <= 0) return;
+  state.idx -= 1;
+  renderStep();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// =================== RESUMO ===================
 function gerarTextoResumo() {
   const linhas = [];
   linhas.push(`CROSS-SELL — RESUMO DA REUNIÃO`);
   linhas.push(`Data: ${formatDataHora()}`);
-  linhas.push(`CS: ${respostas.meta.cs}`);
+  linhas.push(`CS (usuário da ferramenta): ${respostas.meta.cs}`);
+  linhas.push(`CS responsável pela carteira: ${cliente.cs || "—"}`);
+  linhas.push(`Canal Projuris: ${cliente.canal_projuris || "—"}`);
   linhas.push(``);
   linhas.push(`CLIENTE`);
   linhas.push(`Nome: ${cliente.nome}`);
@@ -561,92 +861,121 @@ function gerarTextoResumo() {
   questoes.tronco.forEach(p => {
     const r = respostas.tronco[p.id];
     if (r === undefined) return;
-    const valor = Array.isArray(r) ? r.join("; ") : r;
     linhas.push(`  ${p.pergunta}`);
-    linhas.push(`    → ${valor}`);
+    linhas.push(`    → ${Array.isArray(r) ? r.join("; ") : r}`);
+    if (p.complemento) {
+      const rc = respostas.tronco[`${p.id}_complemento`];
+      if (rc !== undefined) {
+        linhas.push(`    ${p.complemento.pergunta}`);
+        linhas.push(`      → ${Array.isArray(rc) ? rc.join("; ") : rc}`);
+      }
+    }
   });
   linhas.push(``);
-  // Por produto — pergunta inteira + resposta
-  respostas.meta.produtos_entrevistar.forEach(produto => {
+
+  (respostas.meta.produtos_entrevistar || []).forEach(produto => {
     const cfg = questoes.produtos[produto];
     const respProd = respostas.produtos[produto] || {};
     if (Object.keys(respProd).length === 0) return;
     linhas.push(`${produto.toUpperCase()}`);
-    if (cfg.tipo === "ponte") {
-      [cfg.p1, cfg.p2, cfg.p3].forEach(p => {
+    if (produto === "Acordos") {
+      cfg.perguntas_iniciais.forEach(p => {
         const r = respProd[p.id];
         if (r === undefined) return;
-        const valor = Array.isArray(r) ? r.join("; ") : r;
-        linhas.push(`  ${p.pergunta || p.fala || ""}`);
-        linhas.push(`    → ${valor}`);
+        linhas.push(`  ${p.pergunta}`);
+        linhas.push(`    → ${Array.isArray(r) ? r.join("; ") : r}`);
       });
+      const ramosAll = [...(cfg.ramos.passivo || []), ...(cfg.ramos.ativo || [])];
+      ramosAll.forEach(p => {
+        const r = respProd[p.id];
+        if (r === undefined) return;
+        linhas.push(`  ${p.pergunta}`);
+        linhas.push(`    → ${Array.isArray(r) ? r.join("; ") : r}`);
+      });
+      const pf = cfg.pergunta_final_comum;
+      const rf = respProd[pf.id];
+      if (rf !== undefined) {
+        linhas.push(`  ${pf.pergunta}`);
+        linhas.push(`    → ${Array.isArray(rf) ? rf.join("; ") : rf}`);
+      }
+      const ramo = inferirRamoAcordos();
+      const modulo = inferirModuloPassivo();
+      const pitches = [];
+      if (ramo === "ativo" || ramo === "misto") pitches.push(["Pitch ativo", cfg.pitches.ativo]);
+      if (ramo === "passivo" || ramo === "misto") {
+        if (modulo === "indenizatorio") pitches.push(["Pitch passivo indenizatório", cfg.pitches.passivo_indenizatorio]);
+        else if (modulo === "consumidor") pitches.push(["Pitch passivo consumidor", cfg.pitches.passivo_consumidor]);
+        else {
+          pitches.push(["Pitch passivo indenizatório", cfg.pitches.passivo_indenizatorio]);
+          pitches.push(["Pitch passivo consumidor", cfg.pitches.passivo_consumidor]);
+        }
+      }
+      pitches.forEach(([t, p]) => { linhas.push(`  ${t}: ${p}`); });
+    } else if (cfg.tipo === "ponte") {
+      [Object.assign({}, cfg.p1, { tipo: "free_text" }), cfg.p2, cfg.p3].forEach(p => {
+        const r = respProd[p.id];
+        if (r === undefined) return;
+        linhas.push(`  ${p.pergunta || p.fala || ""}`);
+        linhas.push(`    → ${Array.isArray(r) ? r.join("; ") : r}`);
+      });
+      if (cfg.pitch) linhas.push(`  Pitch sugerido: ${cfg.pitch}`);
     } else {
-      const todas = [cfg.pergunta_chave, ...cfg.essenciais, ...cfg.adicionais];
+      const todas = [cfg.pergunta_chave, ...(cfg.essenciais || [])];
       todas.forEach(p => {
         const r = respProd[p.id];
         if (r === undefined) return;
-        const valor = Array.isArray(r) ? r.join("; ") : r;
         linhas.push(`  ${p.pergunta}`);
-        linhas.push(`    → ${valor}`);
+        linhas.push(`    → ${Array.isArray(r) ? r.join("; ") : r}`);
       });
-      if (respProd.sinais_quentes && respProd.sinais_quentes.length) {
-        linhas.push(`  Sinais quentes: ${respProd.sinais_quentes.join("; ")}`);
-      }
+      if (cfg.pitch) linhas.push(`  Pitch sugerido: ${cfg.pitch}`);
     }
-    linhas.push(`  Pitch sugerido: ${cfg.pitch}`);
+    if (respProd.sinais_quentes && respProd.sinais_quentes.length) {
+      linhas.push(`  Sinais quentes: ${respProd.sinais_quentes.join("; ")}`);
+    }
     linhas.push(``);
   });
-  // Final — Decisor (F0), Frase-gancho (F1) e Sensação+considerações sobre o cliente (F2)
-  // saem no resumo pro comercial. F3 (feedback do questionário) fica só na planilha.
-  const f = respostas.final || {};
-  const decisor = f.F0;
-  const frase = f.F1;
 
-  if (decisor) {
-    linhas.push(`DECISOR(ES) PRA PRÓXIMA CONVERSA`);
-    const valor = Array.isArray(decisor) ? decisor.join("; ") : decisor;
-    linhas.push(`  ${valor}`);
+  const ec1 = respostas.encerramento.EC_1;
+  if (ec1 !== undefined) {
+    linhas.push(`ENCERRAMENTO COM CLIENTE — Decisor(es) pra próxima conversa`);
+    linhas.push(`  ${Array.isArray(ec1) ? ec1.join("; ") : ec1}`);
     linhas.push(``);
   }
-  if (frase) {
+
+  const f1 = respostas.final.F1;
+  const f2 = respostas.final.F2;
+  const f2_extra = respostas.final.F2_extra;
+  if (f1) {
     linhas.push(`FRASE-GANCHO DO CLIENTE`);
-    linhas.push(`  "${frase}"`);
+    linhas.push(`  "${f1}"`);
     linhas.push(``);
   }
-
-  // F2 — sensação + considerações sobre o cliente (sai no resumo pro comercial)
-  const f2 = f.F2;
-  const f2_extra = f.F2_extra;
   if (f2 !== undefined || f2_extra !== undefined) {
     linhas.push(`COMENTÁRIOS DO CS SOBRE O CLIENTE`);
     if (f2 !== undefined) {
-      const valor = Array.isArray(f2) ? f2.join("; ") : f2;
-      linhas.push(`  Sensação do atendimento: ${valor}`);
+      linhas.push(`  Sensação do atendimento: ${Array.isArray(f2) ? f2.join("; ") : f2}`);
     }
     if (f2_extra) {
       linhas.push(`  Considerações adicionais: ${f2_extra}`);
     }
     linhas.push(``);
   }
-
   return linhas.join("\n");
 }
 
 function abrirResumo() {
-  coletarRespostas();
+  respostas.meta.finalizado_em = new Date().toISOString();
   document.getElementById("resumo-texto").textContent = gerarTextoResumo();
-  document.getElementById("bloco-tronco").classList.add("hidden");
-  document.getElementById("blocos-produtos").classList.add("hidden");
-  document.getElementById("bloco-final").classList.add("hidden");
+  document.getElementById("wizard").classList.add("hidden");
   document.getElementById("bloco-resumo").classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function voltarParaForm() {
   document.getElementById("bloco-resumo").classList.add("hidden");
-  document.getElementById("bloco-tronco").classList.remove("hidden");
-  document.getElementById("blocos-produtos").classList.remove("hidden");
-  document.getElementById("bloco-final").classList.remove("hidden");
+  document.getElementById("wizard").classList.remove("hidden");
+  state.idx = state.steps.length - 1;
+  renderStep();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -699,9 +1028,12 @@ async function enviar() {
 document.addEventListener("DOMContentLoaded", () => {
   init();
   document.getElementById("modal-cs-confirma").addEventListener("click", confirmarCS);
-  document.getElementById("modal-cs-input").addEventListener("keydown", e => { if (e.key === "Enter") confirmarCS(); });
+  document.getElementById("modal-cs-select").addEventListener("change", () => {
+    document.getElementById("modal-cs-erro").textContent = "";
+  });
   document.getElementById("btn-trocar-cs").addEventListener("click", () => abrirModalCS(true));
-  document.getElementById("btn-revisar").addEventListener("click", abrirResumo);
+  document.getElementById("btn-voltar").addEventListener("click", voltarStep);
+  document.getElementById("btn-proximo").addEventListener("click", proximoStep);
   document.getElementById("btn-voltar-resumo").addEventListener("click", voltarParaForm);
   document.getElementById("btn-copiar-resumo").addEventListener("click", copiarResumo);
   document.getElementById("btn-confirmar-envio").addEventListener("click", enviar);

@@ -18,12 +18,14 @@
     </div>
   </header>
 
-  <!-- Modal de identificação de CS -->
+  <!-- Modal de identificação de CS (dropdown) -->
   <div id="modal-cs" class="modal-overlay" style="display:none;">
     <div class="modal">
       <h2>Quem está usando a ferramenta?</h2>
-      <p>Pra identificar suas qualificações na planilha, digita seu nome (você só preenche uma vez — fica salvo no navegador).</p>
-      <input type="text" id="modal-cs-input" placeholder="Seu nome completo (ex: Maria Sousa)" autocomplete="name">
+      <p>Selecione seu nome na lista (fica salvo no navegador — você só preenche uma vez).</p>
+      <select id="modal-cs-select">
+        <option value="">— selecione seu nome —</option>
+      </select>
       <div class="erro" id="modal-cs-erro"></div>
       <div class="btn-bar">
         <button id="modal-cs-confirma" class="btn btn-primary">Confirmar</button>
@@ -59,23 +61,40 @@
       </div>
     </div>
 
-    <!-- BLOCO TRONCO -->
-    <div id="bloco-tronco" class="bloco hidden">
-      <h2>Bloco comum — Tronco</h2>
-      <p style="color:#57606a; margin-bottom:12px;">5 perguntas rápidas que rodam em todo atendimento.</p>
-      <div id="tronco-perguntas"></div>
-    </div>
+    <!-- WIZARD — 1 pergunta por tela -->
+    <div id="wizard" class="hidden">
+      <div class="wizard-progress">
+        <span class="label" id="wizard-progress-label">Pergunta 1 de X</span>
+        <div class="bar"><div id="wizard-progress-bar" style="width:0%"></div></div>
+        <span class="step-tag" id="wizard-step-tag">—</span>
+      </div>
 
-    <!-- BLOCOS POR PRODUTO -->
-    <div id="blocos-produtos"></div>
+      <div class="wizard-layout">
+        <div class="wizard-main">
+          <div class="step-header" id="wizard-step-header">
+            <span class="tag" id="wizard-step-tipo">—</span>
+            <h2 id="wizard-step-titulo">—</h2>
+            <div class="subtitulo" id="wizard-step-subtitulo"></div>
+          </div>
+          <div id="wizard-step-conteudo"></div>
+          <div id="wizard-step-descarte-alerta" class="descarte-alerta">
+            ⚠ ≥2 marcações "não é prioridade" — modelo sugere descartar este produto.
+          </div>
 
-    <!-- BLOCO FINAL — ESPAÇO ABERTO -->
-    <div id="bloco-final" class="bloco hidden">
-      <h2>Espaço aberto — comentários do CS</h2>
-      <p style="color:#57606a; margin-bottom:12px;">Decisor pra repassar pro comercial e campos livres pra contexto qualitativo. Preencha após a reunião o que fizer sentido.</p>
-      <div id="final-perguntas"></div>
-      <div class="btn-bar">
-        <button id="btn-revisar" class="btn btn-primary">Ver resumo final →</button>
+          <div class="wizard-controls">
+            <div class="left">
+              <button id="btn-voltar" class="btn btn-secondary">← Voltar</button>
+            </div>
+            <div class="right">
+              <button id="btn-pular" class="btn btn-secondary" style="display:none;">Pular</button>
+              <button id="btn-proximo" class="btn btn-primary">Próxima →</button>
+            </div>
+          </div>
+        </div>
+
+        <aside id="wizard-sidebar" class="wizard-sidebar empty">
+          <p>O pitch do produto aparece aqui quando você estiver nas perguntas dele.</p>
+        </aside>
       </div>
     </div>
 

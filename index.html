@@ -18,12 +18,14 @@
     </div>
   </header>
 
-  <!-- Modal de identificação de CS -->
+  <!-- Modal de identificação de CS (agora dropdown da lista oficial) -->
   <div id="modal-cs" class="modal-overlay" style="display:none;">
     <div class="modal">
       <h2>Quem está usando a ferramenta?</h2>
-      <p>Pra identificar suas qualificações na planilha, digita seu nome (você só preenche uma vez — fica salvo no navegador).</p>
-      <input type="text" id="modal-cs-input" placeholder="Seu nome completo (ex: Maria Sousa)" autocomplete="name">
+      <p>Selecione seu nome na lista (fica salvo no navegador — você só preenche uma vez).</p>
+      <select id="modal-cs-select">
+        <option value="">— selecione seu nome —</option>
+      </select>
       <div class="erro" id="modal-cs-erro"></div>
       <div class="btn-bar">
         <button id="modal-cs-confirma" class="btn btn-primary">Confirmar</button>
@@ -33,6 +35,11 @@
 
   <div class="container">
     <div class="filtros">
+      <label for="cs-select">CS:</label>
+      <select id="cs-select">
+        <option value="">Todos os CSs</option>
+      </select>
+
       <label for="carteira-select">Carteira:</label>
       <select id="carteira-select">
         <option value="">Todas</option>
@@ -41,13 +48,17 @@
       <label for="busca">Buscar:</label>
       <input type="text" id="busca" placeholder="nome ou CNPJ">
 
-      <label for="fit-filter">Mostrar apenas com fit:</label>
+      <label for="fit-filter">Apenas com fit:</label>
       <select id="fit-filter">
         <option value="">Qualquer</option>
         <option value="Alta">Alta</option>
         <option value="Média">Alta ou Média</option>
       </select>
 
+      <span id="auto-filter-info" class="auto-filter-info">
+        Mostrando só sua carteira
+        <button id="btn-ver-todos" type="button">Ver todos</button>
+      </span>
       <span class="contador" id="contador">— clientes</span>
     </div>
 
@@ -57,6 +68,8 @@
           <tr>
             <th>CNPJ</th>
             <th>Cliente</th>
+            <th>CS</th>
+            <th>Canal Projuris</th>
             <th>Cart.</th>
             <th>Porte</th>
             <th>HS</th>
@@ -71,7 +84,7 @@
           </tr>
         </thead>
         <tbody id="tabela-body">
-          <tr><td colspan="13" class="empty-state">Carregando…</td></tr>
+          <tr><td colspan="15" class="empty-state">Carregando…</td></tr>
         </tbody>
       </table>
     </div>

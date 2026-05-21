@@ -6,6 +6,35 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL0OV0KWnDB-qr
 
 const PRODUTOS = ["Acordos", "Sienge", "Checklist", "Oystr", "Presto", "Legal Intelligence", "Deep Legal"];
 
+// Módulos que indicam que o cliente FAZ contencioso (pré-requisito p/ oferta Acordos).
+// Regra validada com a Maria em 2026-05-20: principal é "Processos Adm e Judiciais (e-Social)"
+// e "Gestão de Distribuições"; NIP, ProConsumidor, ANATEL etc. também contam (contencioso adm).
+// Lógica é OR — basta ter pelo menos UM desses módulos.
+const MODULOS_CONTENCIOSO = [
+  "Processos Adm e Judiciais (e-Social)",
+  "Gestão de Distribuições",
+  "NIP (plano de saúde, ANS)",
+  "ProConsumidor (Sindec, Procon)",
+  "ANATEL",
+  "Peticiona",
+  "Conciliação de Depósitos Judiciais"
+];
+
+function clienteFazContencioso(c) {
+  const mods = (c.modulos || "").split("; ").map(s => s.trim()).filter(Boolean);
+  return mods.some(m => MODULOS_CONTENCIOSO.includes(m));
+}
+
+// Aplica regras de exceção que não estão no modelo v6 mas vieram da validação manual:
+//  - Acordos só faz sentido se o cliente tem módulo de contencioso (Maria, 20/05/2026)
+function aplicarRegrasFitOverride(c) {
+  if (!clienteFazContencioso(c)) {
+    if (c.fits && (c.fits.Acordos === "Alta" || c.fits.Acordos === "Média")) {
+      c.fits.Acordos = "—";
+    }
+  }
+}
+
 let dados = null;
 // Mapa de "CNPJ + produto" → {data, cs} pra marcar quem já foi entrevistado
 let entrevistasMap = {};
@@ -141,6 +170,8 @@ function aplicarAutoFiltro() {
 async function carregar() {
   const r = await fetch("clientes.json");
   dados = await r.json();
+  // Aplica regras de exceção que vivem fora do modelo (ex: Acordos só p/ quem faz contencioso)
+  dados.clientes.forEach(aplicarRegrasFitOverride);
   popularCarteiras();
   popularDropdownCS();
   popularDropdownCSModal();

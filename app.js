@@ -2,7 +2,7 @@
 
 // Cole aqui a MESMA URL do Apps Script que está no formulario.js (sem essa URL,
 // a sinalização "já entrevistado" não funciona — o resto da página funciona normalmente).
-const APPS_SCRIPT_URL = "";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL0OV0KWnDB-qr8K9HtwvJDZ0-QCJs8O0kttOTshPuLLjvn_Iukibu5NlFIJsSqMK5/exec";
 
 const PRODUTOS = ["Acordos", "Sienge", "Checklist", "Oystr", "Presto", "Legal Intelligence", "Deep Legal"];
 

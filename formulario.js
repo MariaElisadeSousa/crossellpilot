@@ -1,7 +1,7 @@
 // === Cross-sell Empresas — Formulário Adaptativo (modo wizard) ===
 
 // COLE AQUI A URL DO APPS SCRIPT QUANDO PUBLICAR (instruções no README.md)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL0OV0KWnDB-qr8K9HtwvJDZ0-QCJs8O0kttOTshPuLLjvn_Iukibu5NlFIJsSqMK5/exec"; 
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL0OV0KWnDB-qr8K9HtwvJDZ0-QCJs8O0kttOTshPuLLjvn_Iukibu5NlFIJsSqMK5/exec";
 
 let cliente = null;
 let questoes = null;
@@ -19,6 +19,33 @@ let respostas = {
 let state = { steps: [], idx: 0 };
 
 const PRODUTOS = ["Acordos", "Sienge", "Checklist", "Oystr", "Presto", "Legal Intelligence", "Deep Legal"];
+
+// Módulos que indicam que o cliente FAZ contencioso (pré-requisito p/ oferta Acordos).
+// Regra validada com a Maria em 2026-05-20: principal é "Processos Adm e Judiciais (e-Social)"
+// e "Gestão de Distribuições"; NIP, ProConsumidor, ANATEL etc. também contam (contencioso adm).
+// Lógica é OR — basta ter pelo menos UM desses módulos.
+const MODULOS_CONTENCIOSO = [
+  "Processos Adm e Judiciais (e-Social)",
+  "Gestão de Distribuições",
+  "NIP (plano de saúde, ANS)",
+  "ProConsumidor (Sindec, Procon)",
+  "ANATEL",
+  "Peticiona",
+  "Conciliação de Depósitos Judiciais"
+];
+
+function clienteFazContencioso(c) {
+  const mods = (c.modulos || "").split("; ").map(s => s.trim()).filter(Boolean);
+  return mods.some(m => MODULOS_CONTENCIOSO.includes(m));
+}
+
+function aplicarRegrasFitOverride(c) {
+  if (!clienteFazContencioso(c)) {
+    if (c.fits && (c.fits.Acordos === "Alta" || c.fits.Acordos === "Média")) {
+      c.fits.Acordos = "—";
+    }
+  }
+}
 
 // === Identificação do CS (dropdown da lista oficial) ===
 function getCSNome() { return localStorage.getItem("cs_nome") || ""; }
@@ -124,6 +151,8 @@ async function init() {
   questoes = questoesResp;
   cliente = dadosResp.clientes.find(c => c.cnpj === cnpj);
   if (!cliente) { alert("Cliente não encontrado."); window.location.href = "index.html"; return; }
+  // Aplica regras de exceção (ex: Acordos só p/ quem faz contencioso)
+  aplicarRegrasFitOverride(cliente);
 
   popularDropdownCSModal();
   if (!getCSNome()) abrirModalCS();
